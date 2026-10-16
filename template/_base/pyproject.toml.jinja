@@ -33,10 +33,8 @@ select = ["B", "E", "F", "I", "RUF", "UP"]
 [tool.mypy]
 python_version = "{{ pythonMinimum | default('3.12') }}"
 strict = true
-files = ["src/{{ packageName }}"]
+files = ["src/{{ packageName }}"]{% if withTesting | default(true) %}
 
-{% if withTesting | default(true) %}[tool.pytest.ini_options]
+[tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"
-markers = ["unit: isolated unit tests", "integration: external dependency tests", "contract: public contract tests"]
-{% endif %}{% endblock %}
-{% block extraConfiguration %}{% endblock %}
+markers = ["unit: isolated unit tests", "integration: external dependency tests", "contract: public contract tests"]{% endif %}{% endblock %}{% block extraConfiguration %}{% endblock %}
