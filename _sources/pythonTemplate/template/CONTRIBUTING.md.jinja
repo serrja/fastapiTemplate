@@ -1,0 +1,18 @@
+# Contributing to {{ projectName }}
+
+Open a short `type/shortCamelCaseIntent` branch from the actual default branch. Keep each PR focused, review the full diff and outgoing commits, and use a `type(scope): intent` title. Explain purpose, ownership, compatibility, actual checks, privacy, version decision, and rollback. Do not attach secrets or live data.
+
+## 🧪 Local checks
+
+On the first render, run `uv lock` and commit `uv.lock`. After that, use the locked commands below; CI requires the committed lockfile.
+
+```bash
+uv lock --check
+uv sync --locked
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy
+uv build
+```
+
+No subject tests are provided by this scaffold. Until real tests exist, status is `notConfigured`; raw `uv run --locked pytest` exits 5. Once tests exist, run that command and treat empty collection as failure. CI, package release, and deployment are separate from a local build. Record this project's decisions in `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %}.

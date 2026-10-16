@@ -1,0 +1,27 @@
+# {{ projectName }}
+
+An independent FastAPI foundation. It has process health routes and no product API.
+
+## 🚀 Run
+
+Requires Python 3.12+ and `uv`. Generate and commit the project-owned `uv.lock` before locked commands.
+
+```bash
+uv lock
+uv sync --locked
+uv run --locked uvicorn {{ packageName }}.app:createApp --factory --host 127.0.0.1 --port 8000
+```
+
+The application factory reads settings when called. Imports do not open network connections or create database engines. `GET /health/live` reports the process; `GET /health/ready` checks only enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before startup. The template does not create a schema or run migrations on startup.{% else %} This render needs no database URL or credentials.{% endif %}
+
+## 🛠 Development
+
+```bash
+uv lock --check
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy
+uv build
+```
+
+No subject tests are included. With test tooling enabled, empty pytest collection is `notConfigured`, not a passing suite. The [architecture](docs/architecture.md), [contribution guide](CONTRIBUTING.md), `PROJECT.md`, and `SERVICE.md` describe ownership. `PROJECT.md` and `SERVICE.md` belong to this application.

@@ -1,0 +1,58 @@
+_min_copier_version: "9.17.2"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+_envops:
+  undefined: jinja2.StrictUndefined
+_skip_if_exists:
+  - PROJECT.md
+  - SERVICE.md
+  - "src/*/settings.py"
+  - "migrations/**"
+_exclude:
+  - "_base"
+  - "_base/**"
+  - "{% if not withCi %}.github/workflows{% endif %}"
+  - "{% if not withCi %}.github/workflows/**{% endif %}"
+  - "{% if not withTesting %}.pre-commit-config.yaml{% endif %}"
+  - "{% if not withPersistence %}alembic.ini{% endif %}"
+  - "{% if not withPersistence %}migrations/**{% endif %}"
+  - "{% if not withPersistence %}migrations{% endif %}"
+  - "{% if not withPersistence %}src/*/persistence.py{% endif %}"
+  - "{% if not withDocker %}Dockerfile{% endif %}"
+  - "{% if not withDocker %}.dockerignore{% endif %}"
+projectName:
+  type: str
+  help: "Short lower camelCase application name."
+  validator: >-
+    {%- if not projectName or not projectName.isascii() or not projectName[0].islower() or not projectName.isalnum() -%}
+    Use ASCII lower camelCase, starting with a lowercase letter.
+    {%- endif -%}
+packageName:
+  type: str
+  default: "{{ projectName }}"
+  when: false
+projectDescription:
+  type: str
+  default: "{{ projectName }} FastAPI foundation"
+  when: false
+profile:
+  type: str
+  default: library
+  when: false
+withPersistence:
+  type: bool
+  default: false
+  help: "Include PostgreSQL and Alembic wiring."
+withDocker:
+  type: bool
+  default: true
+  help: "Include a non-root application image."
+withTesting:
+  type: bool
+  default: true
+  help: "Include test tooling, without subject test bodies."
+withCi:
+  type: bool
+  default: true
+  help: "Include CI for this generated application."

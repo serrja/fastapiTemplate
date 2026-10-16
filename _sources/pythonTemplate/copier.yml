@@ -1,0 +1,70 @@
+_min_copier_version: "9.17.2"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+_envops:
+  undefined: jinja2.StrictUndefined
+_skip_if_exists:
+  - PROJECT.md
+  - SERVICE.md
+  - "src/*/settings.py"
+  - "migrations/**"
+_exclude:
+  - "{% if not (withCi | default(true)) %}.github/workflows{% endif %}"
+  - "{% if not (withCi | default(true)) %}.github/workflows/**{% endif %}"
+  - "{% if not (withTesting | default(true)) %}.pre-commit-config.yaml{% endif %}"
+  - "{% if profile != 'cli' %}src/*/cli.py{% endif %}"
+  - "{% if profile != 'cli' %}src/*/__main__.py{% endif %}"
+  - "{% if profile != 'service' %}src/*/app.py{% endif %}"
+  - "{% if profile != 'service' %}src/*/settings.py{% endif %}"
+  - "{% if profile != 'service' or not (withPersistence | default(false)) %}src/*/persistence.py{% endif %}"
+  - "{% if profile != 'service' or not (withPersistence | default(false)) %}alembic.ini{% endif %}"
+  - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations/**{% endif %}"
+  - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations{% endif %}"
+  - "{% if profile != 'service' %}Dockerfile{% endif %}"
+  - "{% if profile != 'service' %}.dockerignore{% endif %}"
+  - "{% if profile != 'service' %}SERVICE.md{% endif %}"
+  - "{% if profile != 'native' %}CMakeLists.txt{% endif %}"
+  - "{% if profile != 'native' %}native/*{% endif %}"
+  - "{% if profile != 'native' %}native{% endif %}"
+  - "{% if profile != 'library' %}src/*/py.typed{% endif %}"
+
+projectName:
+  type: str
+  help: "Short camelCase project name, for example notesCli."
+  validator: >-
+    {%- if not projectName or not projectName.isascii() or not projectName[0].isalpha() or not projectName.isalnum() -%}
+    Use ASCII letters and digits, starting with a letter.
+    {%- elif projectName[0].islower() == false -%}
+    Start with a lowercase letter (camelCase).
+    {%- endif -%}
+
+profile:
+  type: str
+  choices:
+    - cli
+    - library
+    - service
+    - native
+  help: "Project profile."
+
+withPersistence:
+  type: bool
+  default: false
+  when: "{{ profile == 'service' }}"
+  help: "Include optional async PostgreSQL connection and Alembic wiring."
+
+withTesting:
+  type: bool
+  default: true
+  help: "Include future test tooling without subject test bodies."
+
+withCi:
+  type: bool
+  default: true
+  help: "Include CI for this generated project."
+
+packageName:
+  type: str
+  default: "{{ projectName }}"
+  when: false

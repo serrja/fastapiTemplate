@@ -1,0 +1,52 @@
+"""HTTP composition root; no product routes are registered by the template."""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+{% if withPersistence | default(false) %}from fastapi import FastAPI, HTTPException
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+from {{ packageName }}.persistence import createEngine
+from {{ packageName }}.settings import ServiceSettings
+{% else %}from fastapi import FastAPI
+
+from {{ packageName }}.settings import ServiceSettings
+{% endif %}
+
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    """Own process resources for exactly one ASGI lifespan."""
+    settings = ServiceSettings()
+    logging.getLogger("{{ projectName }}").setLevel(settings.logLevel)
+{% if withPersistence | default(false) %}    engine = createEngine(settings)
+    application.state.dbEngine = engine
+    try:
+        yield
+    finally:
+        await engine.dispose()
+{% else %}    yield
+{% endif %}
+
+app = FastAPI(title="{{ projectName }}", lifespan=lifespan)
+
+
+@app.get("/health/live", include_in_schema=False)
+def live() -> dict[str, str]:
+    """Confirm the HTTP process is serving requests."""
+    return {"status": "alive"}
+
+
+@app.get("/health/ready", include_in_schema=False)
+async def ready() -> dict[str, str]:
+    """Check only dependencies actually enabled in this generated service."""
+{% if withPersistence | default(false) %}    try:
+        async with app.state.dbEngine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        logging.getLogger("{{ projectName }}").warning("Required database unavailable")
+        raise HTTPException(status_code=503, detail="Required dependency unavailable") from exc
+{% endif %}    return {"status": "ready"}

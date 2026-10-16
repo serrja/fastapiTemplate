@@ -1,0 +1,3 @@
+# fastApiTemplate
+
+This repository owns generic FastAPI source additions and an assembled Copier derivative of `pythonTemplate`. Use lower camelCase for owned names, preserve tool/framework names, and keep Pokerlost contracts out. Read `composition.toml` and parent provenance before editing. Edit `overlay/` for FastAPI behavior; update `_sources/pythonTemplate` only through the explicit refresh command. `template/`, `tools/composeTemplate.py`, and `composition.lock.json` are generated source, not independent copies. Run a real disposable Copier render for both persistence choices and narrow package checks. Do not add subject test bodies, credentials, post-generation hooks, or product endpoints. Preserve application-owned files on update.

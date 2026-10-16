@@ -1,0 +1,14 @@
+# {{ projectName }} architecture
+
+`createApp` is the composition root. FastAPI lifespan owns resources per worker, and the settings boundary validates enabled components. The pristine app has only liveness and readiness. Routers, application scenarios, and adapters are added for real product operations.
+
+{% if withPersistence %}The database dependency opens a short transaction for one HTTP request and commits or rolls back before the response is sent. Repositories and handlers do not commit. Serialize ORM data before cleanup, never share an `AsyncSession` across concurrent tasks, and keep external network calls outside a database transaction. Streaming, WebSocket, and background work require their own short sessions. Alembic contains no subject revision; use a disposable database to develop schema changes.{% else %}Persistence is disabled. No DSN, engine, session, or database readiness connection is required.{% endif %}
+
+`PROJECT.md` and `SERVICE.md` belong to the generated application. Template updates review managed-file changes and preserve those documents, application code, settings, scopes, and migrations.
+{% if withTesting %}
+## 🧪 Test lifecycle
+
+The optional test group supplies pytest, pytest-asyncio, HTTPX, and asgi-lifespan. Build a fresh app with explicit settings inside an isolated test environment. Wrap `createApp(settings)` in `LifespanManager` before using `httpx.AsyncClient(transport=httpx.ASGITransport(app=application))`; ASGITransport alone does not start lifespan. Keep the app, client, and event loop at compatible scopes, and clear `application.dependency_overrides` in cleanup. No subject test is generated, so an empty collection is `notConfigured`.
+
+For database integration, create a disposable database or schema/user with bounded readiness, and remove only that run's resources afterward. Do not use a live DSN or rely on one rollback to isolate DDL, multiple connections, or internal commits. A unique Compose project can provide the disposable dependency; this scaffold does not start one automatically.
+{% endif %}

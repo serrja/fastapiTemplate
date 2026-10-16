@@ -1,0 +1,12 @@
+"""Command-line entrypoint for {{ projectName }}."""
+
+from __future__ import annotations
+
+import typer
+
+app = typer.Typer(help="{{ projectName }} command-line interface")
+
+
+@app.callback()
+def main() -> None:
+    """Run the command-line application."""
