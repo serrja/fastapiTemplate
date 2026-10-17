@@ -1,6 +1,6 @@
 # fastApiTemplate
 
-A generic FastAPI Copier source assembled from a content-addressed snapshot of the existing `pythonTemplate` source (`serrja/projectTemplates`) and a small web overlay. Generated applications need no adjacent template checkout.
+A generic FastAPI Copier source assembled from a content-addressed snapshot of the existing `pythonTemplate` source (`serrja/pythonTemplate`) and a small web overlay. Generated applications need no adjacent template checkout.
 
 ## 🚀 Generate
 
@@ -29,7 +29,7 @@ The derivative is currently `0.1.0.dev0` with answers schema 1; these are local 
 ```bash
 uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . --smoke
 uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . \
-  --refresh-base /path/to/projectTemplates --smoke
+  --refresh-base /path/to/pythonTemplate --smoke
 ```
 
 The first command rebuilds from the pinned snapshot and works in a clean checkout. The second is an intentional parent update, followed by review of `composition.lock.json` and generated files. Never float the parent to `main` at generation time.

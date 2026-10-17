@@ -1,6 +1,6 @@
 # Contributing to fastApiTemplate
 
-The shared naming, review, and version rules are owned by the existing `serrja/projectTemplates` repository (`docs/naming.md`, `docs/contributing.md`, `docs/versioning.md`, and `docs/releaseGuide.md`). This repository owns only the FastAPI overlay and its derivative source.
+The shared naming, review, and version rules are owned by the existing `serrja/pythonTemplate` repository (`docs/naming.md`, `docs/contributing.md`, `docs/versioning.md`, and `docs/releaseGuide.md`). This repository owns only the FastAPI overlay and its derivative source.
 
 Read [AGENTS.md](AGENTS.md), [README.md](README.md), and `composition.toml`. Edit `overlay/`, refresh a reviewed Python-base snapshot with the command in the README, and inspect `composition.lock.json` and the derived `template/` diff. Render both persistence choices into disposable directories; run their locked Ruff, strict mypy, wheel, installed-wheel startup, and bounded health checks. Record empty test collection as `notConfigured`. A real database check uses a disposable database; a local Docker failure is not a passing container check.
 
