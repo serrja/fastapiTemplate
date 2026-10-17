@@ -32,4 +32,4 @@ uv build
 ## 📚 Documentation
 
 The [architecture note](docs/architecture.md) records boundaries. The `AGENTS.md` file describes repository work rules. `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %} are project-owned and survive template updates.
-The local [contribution guide](CONTRIBUTING.md) lists the project's commands and review process. No release or production deployment is configured.
+The local [contribution guide](CONTRIBUTING.md) lists the project's commands and review process.{% if withCi | default(true) %} `.github/workflows/release.yml` is a manual release-candidate build for an already authorized tag; it checks commit and version, uploads artifact hashes and notes, and marks publication and deployment `notConfigured` until a registry and target are selected.{% else %} No release or production deployment is configured.{% endif %}

@@ -26,6 +26,8 @@ The root `tools/compose_template.py` is also a checked mirror of the pinned Pyth
 
 The derivative is currently `0.1.0.dev0` with answers schema 1; these are local worktree identifiers, not a published template release. The exact source identity is in `composition.lock.json`.
 
+CI-enabled renders inherit the Python base's manual release-candidate workflow. It checks an already authorized tag, reviewed commit and package version, builds artifacts, and records hashes; publication and deployment stay `notConfigured` until a registry and target are chosen.
+
 ```bash
 uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . --smoke
 uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . \

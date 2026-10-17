@@ -10,6 +10,7 @@ include = [
   ".pre-commit-config.yaml",
   ".github/PULL_REQUEST_TEMPLATE.md.jinja",
   ".github/workflows/ci.yml.jinja",
+  ".github/workflows/release.yml.jinja",
   "AGENTS.md.jinja",
   "CONTRIBUTING.md.jinja",
   "PROJECT.md.jinja",

@@ -25,3 +25,5 @@ uv build
 ```
 
 {% if withTesting %}Technical HTTP, lifecycle, and settings tests are included. Run `uv run --locked pytest`.{% if withPersistence %} For positive PostgreSQL readiness, point `TEST_DATABASE_URL` and `DATABASE_URL` at a disposable database, then run `uv run --locked pytest tests/database_integration.py` and `uv run --locked alembic upgrade head`.{% endif %}{% else %}Tests are disabled by this render; enable them before claiming a passing suite.{% endif %} The [architecture](docs/architecture.md), [contribution guide](CONTRIBUTING.md), `PROJECT.md`, and `SERVICE.md` describe ownership. `PROJECT.md` and `SERVICE.md` belong to this application.
+
+{% if withCi %}`.github/workflows/release.yml` manually verifies an authorized tag, commit and version, then builds artifact candidates. Its publication and deployment stages remain `notConfigured` until a registry and target are selected.{% endif %}
