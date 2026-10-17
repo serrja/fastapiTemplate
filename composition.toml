@@ -22,6 +22,6 @@ include = [
   "migrations/env.py.jinja",
   "migrations/versions/.gitkeep",
 ]
-allowOverride = ["README.md.jinja", "pyproject.toml.jinja", "docs/architecture.md.jinja", ".github/workflows/ci.yml.jinja"]
+allowOverride = ["README.md.jinja", "CONTRIBUTING.md.jinja", "pyproject.toml.jinja", "docs/architecture.md.jinja", ".github/workflows/ci.yml.jinja"]
 retainBase = { "pyproject.toml.jinja" = "_base/pyproject.toml.jinja" }
 smokeAnswers = { projectName = "sampleApi", withPersistence = false, withTesting = false, withCi = false }

@@ -1,0 +1,19 @@
+# Contributing to {{ projectName }}
+
+Keep changes focused and review public HTTP paths, operation IDs, environment names, and database migration effects before committing. `PROJECT.md` and `SERVICE.md` belong to this application. Use a short branch and a clear `type(scope): intent` title; report actual checks and the compatibility decision in the PR.
+
+## Local checks
+
+Commit `uv.lock` after the first render, then use the same commands as CI:
+
+```bash
+uv lock --check
+uv sync --locked
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy
+{% if withTesting %}uv run --locked pytest -q
+{% endif %}uv build
+```
+
+The generated tests cover infrastructure HTTP and lifecycle behavior when `withTesting=true`. Add tests for real product behavior as it appears. Positive database readiness and Alembic upgrades require an isolated PostgreSQL instance. A wheel build, image build, release, and deployment are distinct operations.

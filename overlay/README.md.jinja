@@ -9,7 +9,7 @@ Requires Python 3.12+ and `uv`. Generate and commit the project-owned `uv.lock` 
 ```bash
 uv lock
 uv sync --locked
-uv run --locked uvicorn {{ packageName }}.app:createApp --factory --host 127.0.0.1 --port 8000
+uv run --locked uvicorn {{ packageName }}.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 The application factory reads settings when called. Imports do not open network connections or create database engines. `GET /health/live` reports the process; `GET /health/ready` checks only enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before startup. The template does not create a schema or run migrations on startup.{% else %} This render needs no database URL or credentials.{% endif %}
@@ -24,4 +24,4 @@ uv run --locked mypy
 uv build
 ```
 
-No subject tests are included. With test tooling enabled, empty pytest collection is `notConfigured`, not a passing suite. The [architecture](docs/architecture.md), [contribution guide](CONTRIBUTING.md), `PROJECT.md`, and `SERVICE.md` describe ownership. `PROJECT.md` and `SERVICE.md` belong to this application.
+{% if withTesting %}Technical HTTP, lifecycle, and settings tests are included. Run `uv run --locked pytest`.{% if withPersistence %} For positive PostgreSQL readiness, point `TEST_DATABASE_URL` and `DATABASE_URL` at a disposable database, then run `uv run --locked pytest tests/database_integration.py` and `uv run --locked alembic upgrade head`.{% endif %}{% else %}Tests are disabled by this render; enable them before claiming a passing suite.{% endif %} The [architecture](docs/architecture.md), [contribution guide](CONTRIBUTING.md), `PROJECT.md`, and `SERVICE.md` describe ownership. `PROJECT.md` and `SERVICE.md` belong to this application.

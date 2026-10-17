@@ -19,18 +19,21 @@ _exclude:
   - "{% if not withPersistence %}migrations/**{% endif %}"
   - "{% if not withPersistence %}migrations{% endif %}"
   - "{% if not withPersistence %}src/*/persistence.py{% endif %}"
+  - "{% if not withPersistence %}tests/database_integration.py{% endif %}"
+  - "{% if not withTesting %}tests/**{% endif %}"
+  - "{% if not withTesting %}tests{% endif %}"
   - "{% if not withDocker %}Dockerfile{% endif %}"
   - "{% if not withDocker %}.dockerignore{% endif %}"
 projectName:
   type: str
-  help: "Short lower camelCase application name."
+  help: "Stable application name; new Python import package is lowercase."
   validator: >-
     {%- if not projectName or not projectName.isascii() or not projectName[0].islower() or not projectName.isalnum() -%}
     Use ASCII lower camelCase, starting with a lowercase letter.
     {%- endif -%}
 packageName:
   type: str
-  default: "{{ projectName }}"
+  default: "{{ projectName | lower }}"
   when: false
 projectDescription:
   type: str
@@ -51,7 +54,7 @@ withDocker:
 withTesting:
   type: bool
   default: true
-  help: "Include test tooling, without subject test bodies."
+  help: "Include technical HTTP, lifecycle, and configuration tests."
 withCi:
   type: bool
   default: true

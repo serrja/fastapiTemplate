@@ -15,4 +15,4 @@ uv run --locked mypy
 uv build
 ```
 
-No subject tests are provided by this scaffold. Until real tests exist, status is `notConfigured`; raw `uv run --locked pytest` exits 5. Once tests exist, run that command and treat empty collection as failure. CI, package release, and deployment are separate from a local build. Record this project's decisions in `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %}.
+{% if profile == 'service' and withTesting | default(true) %}This scaffold includes a technical HTTP/lifespan test. Run `uv run --locked pytest`; add subject tests when behavior is implemented.{% else %}No subject tests are provided by this profile. Until real tests exist, status is `notConfigured`; raw `uv run --locked pytest` exits 5. Once tests exist, treat empty collection as failure.{% endif %} CI, package release, and deployment are separate from a local build. Record this project's decisions in `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %}.

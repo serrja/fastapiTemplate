@@ -16,6 +16,9 @@ _exclude:
   - "{% if profile != 'cli' %}src/*/cli.py{% endif %}"
   - "{% if profile != 'cli' %}src/*/__main__.py{% endif %}"
   - "{% if profile != 'service' %}src/*/app.py{% endif %}"
+  - "{% if profile != 'service' %}src/*/health.py{% endif %}"
+  - "{% if profile != 'service' or not (withTesting | default(true)) %}tests/**{% endif %}"
+  - "{% if profile != 'service' or not (withTesting | default(true)) %}tests{% endif %}"
   - "{% if profile != 'service' %}src/*/settings.py{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}src/*/persistence.py{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}alembic.ini{% endif %}"
@@ -31,7 +34,7 @@ _exclude:
 
 projectName:
   type: str
-  help: "Short camelCase project name, for example notesCli."
+  help: "Stable project name, for example notesCli. The Python package is lowercase."
   validator: >-
     {%- if not projectName or not projectName.isascii() or not projectName[0].isalpha() or not projectName.isalnum() -%}
     Use ASCII letters and digits, starting with a letter.
@@ -66,5 +69,5 @@ withCi:
 
 packageName:
   type: str
-  default: "{{ projectName }}"
+  default: "{{ projectName | lower }}"
   when: false

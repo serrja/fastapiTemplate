@@ -1,0 +1,60 @@
+"""Verify HTTP contract, settings aliases, and lifespan cleanup."""
+
+from __future__ import annotations
+
+import asyncio
+
+from httpx import ASGITransport, AsyncClient
+from pytest import MonkeyPatch
+
+from {{ packageName }}.app import create_app
+from {{ packageName }}.settings import ServiceSettings
+
+
+def test_infrastructure_http(monkeypatch: MonkeyPatch) -> None:
+    """Keep response codes and correlation headers stable without external I/O."""
+    monkeypatch.setenv("{{ projectName | upper }}_LOGLEVEL", "DEBUG")
+{% if withPersistence %}    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://test:test@127.0.0.1:1/test"
+    )
+{% endif %}    settings = ServiceSettings()
+    assert settings.log_level == "DEBUG"
+    application = create_app(settings)
+
+    @application.get("/validate/{item_id}")
+    async def validate(item_id: int) -> dict[str, int]:
+        return {"item_id": item_id}
+
+    @application.get("/fail")
+    async def fail() -> None:
+        raise RuntimeError("internal detail must stay private")
+
+    async def exercise() -> None:
+        async with application.router.lifespan_context(application):
+            transport = ASGITransport(app=application, raise_app_exceptions=False)
+            async with AsyncClient(
+                transport=transport, base_url="http://test"
+            ) as client:
+                live = await client.get(
+                    "/health/live", headers={"X-Request-ID": "test-123"}
+                )
+                assert live.status_code == 200
+                assert live.json() == {"status": "alive"}
+                assert live.headers["X-Request-ID"] == "test-123"
+                missing = await client.get("/missing")
+                assert missing.status_code == 404
+                assert missing.json()["error"]["code"] == "NOT_FOUND"
+                invalid = await client.get("/validate/not-an-int")
+                assert invalid.status_code == 422
+                assert invalid.json()["error"]["code"] == "VALIDATION_ERROR"
+                failure = await client.get("/fail")
+                assert failure.status_code == 500
+                assert failure.json()["error"]["code"] == "INTERNAL_ERROR"
+                assert "internal detail" not in failure.text
+{% if not withPersistence %}                ready = await client.get("/health/ready")
+                assert ready.status_code == 200
+                assert ready.json() == {"status": "ready"}
+{% endif %}        assert "/health/live" not in application.openapi()["paths"]
+        assert not hasattr(application.state, "resources")
+
+    asyncio.run(exercise())

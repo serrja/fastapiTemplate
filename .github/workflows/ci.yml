@@ -15,6 +15,20 @@ jobs:
   template:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17.11-trixie
+        env:
+          POSTGRES_USER: template_ci
+          POSTGRES_PASSWORD: template_ci
+          POSTGRES_DB: template_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U template_ci -d template_ci"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +41,9 @@ jobs:
           enable-cache: true
       - run: uv python install 3.12
       - name: Verify pinned source and compose
-        run: uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . --smoke
+        run: uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . --smoke
+      - name: Copier update regression
+        run: uv run --no-project --python 3.12 --with 'copier==9.17.2' --with 'pytest>=9,<10' pytest -q tests
       - name: Render
         run: uv run --no-project --with 'copier==9.17.2' copier copy --defaults . "$RUNNER_TEMP/rendered" -d projectName=exampleApi -d withPersistence=${{ matrix.persistence }}
       - name: Lock, lint, type, build
@@ -38,10 +54,28 @@ jobs:
           uv run --locked ruff check .
           uv run --locked ruff format --check .
           uv run --locked mypy
+          uv run --locked pytest -q
           uv build
+      - name: Disposable database readiness and migrations
+        if: matrix.persistence
+        working-directory: ${{ runner.temp }}/rendered
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://template_ci:template_ci@127.0.0.1:5432/template_ci
+          DATABASE_URL: postgresql+asyncpg://template_ci:template_ci@127.0.0.1:5432/template_ci
+        run: |
+          uv run --locked pytest -q tests/database_integration.py
+          uv run --locked alembic upgrade head
       - name: Container build
         working-directory: ${{ runner.temp }}/rendered
         run: docker build --file Dockerfile --tag example-api:ci .
-      - name: Empty suite status
+      - name: Image liveness startup
         run: |
-          echo 'NOT_CONFIGURED: no subject tests in new scaffold'
+          container="$(docker run --detach --rm --publish 127.0.0.1::8000 --env DATABASE_URL=postgresql+asyncpg://ci:ci@127.0.0.1:1/ci example-api:ci)"
+          trap 'docker rm --force "$container" >/dev/null' EXIT
+          port="$(docker port "$container" 8000/tcp | tail -n 1 | cut -d: -f2)"
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent "http://127.0.0.1:$port/health/live"; then exit 0; fi
+            sleep 1
+          done
+          docker logs --tail 20 "$container"
+          exit 1

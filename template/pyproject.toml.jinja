@@ -1,5 +1,5 @@
 {% extends basePyprojectTemplate | default("template/_base/pyproject.toml.jinja") %}
 {% block runtimeDependencies %}"fastapi>=0.121,<1", "uvicorn>=0.38,<1", "pydantic-settings>=2.12,<3"{% if withPersistence %}, "sqlalchemy[asyncio]>=2.0.44,<3", "asyncpg>=0.31,<1", "alembic>=1.17,<2"{% endif %}{% endblock %}
 {% block development %}[dependency-groups]
-dev = ["mypy>=2.3,<3", "ruff>=0.16,<1"{% if withTesting %}, "pytest>=9,<10", "pytest-cov>=7,<8", "pytest-asyncio>=1.2,<2", "httpx>=0.28,<1", "asgi-lifespan>=2.1,<3"{% endif %}]
+dev = ["mypy>=2.3,<3", "ruff>=0.16,<1"{% if withTesting %}, "pytest>=9,<10", "pytest-cov>=7,<8", "httpx>=0.28,<1"{% endif %}]
 {% endblock %}

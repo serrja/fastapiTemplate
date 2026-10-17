@@ -13,14 +13,16 @@ from sqlalchemy.ext.asyncio import (
 from {{ packageName }}.settings import ServiceSettings
 
 
-def createEngine(settings: ServiceSettings) -> AsyncEngine:
+def create_engine(settings: ServiceSettings) -> AsyncEngine:
     """Create a pool without opening a network connection at import time."""
     try:
-        return create_async_engine(settings.databaseUrl.get_secret_value(), pool_pre_ping=True)
+        return create_async_engine(
+            settings.database_url.get_secret_value(), pool_pre_ping=True
+        )
     except SQLAlchemyError:
         raise ValueError("Invalid DATABASE_URL") from None
 
 
-def sessionFactory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+def session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     """Give each application operation its own session and transaction."""
     return async_sessionmaker(engine, expire_on_commit=False)

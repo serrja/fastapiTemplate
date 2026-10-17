@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
-{% if withPersistence | default(false) %}from pydantic import Field, SecretStr, field_validator
-{% endif %}from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, Field{% if withPersistence | default(false) %}, SecretStr, field_validator{% endif %}
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ServiceSettings(BaseSettings):
@@ -15,12 +15,21 @@ class ServiceSettings(BaseSettings):
         env_prefix="{{ projectName | upper }}_", extra="ignore", validate_default=True
     )
 
-    logLevel: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"{% if withPersistence | default(false) %}
-    databaseUrl: SecretStr = Field(default=SecretStr(""), validation_alias="DATABASE_URL")
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(
+        default="INFO",
+        validation_alias=AliasChoices(
+            "{{ projectName | upper }}_LOGLEVEL", "{{ projectName | upper }}_LOG_LEVEL"
+        ),
+    ){% if withPersistence | default(false) %}
+    database_url: SecretStr = Field(
+        default=SecretStr(""), validation_alias="DATABASE_URL"
+    )
 
-    @field_validator("databaseUrl")
+    @field_validator("database_url")
     @classmethod
-    def requireDatabaseUrl(cls, value: SecretStr) -> SecretStr:
+    def require_database_url(cls, value: SecretStr) -> SecretStr:
         if not value.get_secret_value().startswith("postgresql+asyncpg://"):
-            raise ValueError("DATABASE_URL must use postgresql+asyncpg when persistence is enabled")
+            raise ValueError(
+                "DATABASE_URL must use postgresql+asyncpg when persistence is enabled"
+            )
         return value{% endif %}

@@ -1,10 +1,10 @@
 {
   "answersSchema": 1,
-  "configurationSha256": "b9cfc2a44172c32d4084a02b84710cf5fa739150fb58a5ea999827739d2a0449",
-  "copierConfigurationSha256": "8d29f427841856482f64f835e65ed26b8f2e19d09b4cc4445c183eb9215b5304",
-  "overlayContentSha256": "29297f3168565c625b4cfda4229c6541c7b2efbcddebb087f23b44b23e05c883",
-  "parentContentSha256": "dae13470216712485b63f8aa4fb1e7959bf4a9bab070b6ad95e8b0fc7e7be4a0",
+  "configurationSha256": "dd885a2e1f21286ca659bce50463ac335ae7a9bf174a3484562dbedbcf0148c0",
+  "copierConfigurationSha256": "9cff5f09566f344483bcbb2ea75a75038fec750cfa479e3acbd31473eb4cadb5",
+  "overlayContentSha256": "08107c30818d966a0c5ee2ffffed0f2a58480307d535ef7a2d42ff43f79e94cb",
+  "parentContentSha256": "7b59e1969713ab3eacbae54885de6643cf0706f3e8c6800123da73e47bbff37b",
   "publication": "local composition; release status must be checked separately",
-  "sourceContentSha256": "91d7e307cb2e698b1f8fb03357346b9911da0d6bd33728591dd00bdeac17bddf",
+  "sourceContentSha256": "a07eb8fc1ab7819ad3c0f054778dc9c43bd144315cafe87b38d16cbbc3bef64c",
   "templateVersion": "0.1.0.dev0"
 }

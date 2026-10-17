@@ -12,39 +12,45 @@ from fastapi.responses import JSONResponse
 LOGGER = logging.getLogger("{{ projectName }}")
 
 
-def errorResponse(statusCode: int, code: str, message: str) -> JSONResponse:
+def error_response(status_code: int, code: str, message: str) -> JSONResponse:
     """Map a reviewed error code to one public response shape."""
 {% block responseContent %}    content = {"error": {"code": code, "message": message}}
-{% endblock %}    return JSONResponse(status_code=statusCode, content=content)
+{% endblock %}    return JSONResponse(status_code=status_code, content=content)
 
 
-def configureErrorHandlers(application: FastAPI) -> None:
+def configure_error_handlers(application: FastAPI) -> None:
     """Register sanitized request, HTTP, and unexpected error responses."""
 
     @application.exception_handler(RequestValidationError)
-    async def invalidRequest(request: Request, error: RequestValidationError) -> JSONResponse:
+    async def invalid_request(
+        request: Request, error: RequestValidationError
+    ) -> JSONResponse:
         del request, error
-        return errorResponse(422, "VALIDATION_ERROR", "Request validation failed")
+        return error_response(422, "VALIDATION_ERROR", "Request validation failed")
 
     @application.exception_handler(StarletteHTTPException)
-    async def httpError(request: Request, error: StarletteHTTPException) -> JSONResponse:
+    async def http_error(
+        request: Request, error: StarletteHTTPException
+    ) -> JSONResponse:
         del request
-        statusCode = error.status_code
-        if statusCode == 404:
-            return errorResponse(statusCode, "NOT_FOUND", "Resource not found")
-        if statusCode == 405:
-            return errorResponse(statusCode, "METHOD_NOT_ALLOWED", "Method not allowed")
-        if statusCode == 503:
-            return errorResponse(
-                statusCode, "DEPENDENCY_UNAVAILABLE", "Required dependency unavailable"
+        status_code = error.status_code
+        if status_code == 404:
+            return error_response(status_code, "NOT_FOUND", "Resource not found")
+        if status_code == 405:
+            return error_response(
+                status_code, "METHOD_NOT_ALLOWED", "Method not allowed"
             )
-        return errorResponse(statusCode, "HTTP_ERROR", "HTTP request failed")
+        if status_code == 503:
+            return error_response(
+                status_code, "DEPENDENCY_UNAVAILABLE", "Required dependency unavailable"
+            )
+        return error_response(status_code, "HTTP_ERROR", "HTTP request failed")
 
     @application.exception_handler(Exception)
-    async def unexpectedError(request: Request, error: Exception) -> JSONResponse:
+    async def unexpected_error(request: Request, error: Exception) -> JSONResponse:
         LOGGER.error("Unhandled request error class=%s", type(error).__name__)
-        response = errorResponse(500, "INTERNAL_ERROR", "Internal server error")
-        requestId = getattr(request.state, "requestId", None)
-        if isinstance(requestId, str):
-            response.headers["X-Request-ID"] = requestId
+        response = error_response(500, "INTERNAL_ERROR", "Internal server error")
+        request_id = getattr(request.state, "request_id", None)
+        if isinstance(request_id, str):
+            response.headers["X-Request-ID"] = request_id
         return response

@@ -1,0 +1,40 @@
+"""Liveness and enabled-dependency readiness routes."""
+
+from __future__ import annotations
+
+{% if withPersistence %}import asyncio
+import logging
+{% endif %}from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+{% if withPersistence %}from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+{% endif %}
+from {{ packageName }}.resources import ApplicationResources, get_resources
+
+router = APIRouter(include_in_schema=False)
+
+
+@router.get("/health/live")
+async def live() -> dict[str, str]:
+    """Confirm the process can answer HTTP without querying dependencies."""
+    return {"status": "alive"}
+
+
+@router.get("/health/ready")
+async def ready(
+    resources: Annotated[ApplicationResources, Depends(get_resources)],
+) -> dict[str, str]:
+    """Check only resources enabled for this application."""
+{% if withPersistence %}    try:
+        async with asyncio.timeout(2.0):
+            async with resources.engine.connect() as connection:
+                await connection.execute(text("SELECT 1"))
+    except (OSError, TimeoutError, SQLAlchemyError) as exc:
+        logging.getLogger("{{ projectName }}").warning("Required database unavailable")
+        raise HTTPException(
+            status_code=503, detail="Required dependency unavailable"
+        ) from exc
+{% else %}    if not resources.ready:
+        raise HTTPException(status_code=503, detail="Required dependency unavailable")
+{% endif %}    return {"status": "ready"}

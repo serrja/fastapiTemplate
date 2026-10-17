@@ -16,7 +16,7 @@ dependencies = [{% block runtimeDependencies %}{% if profile == 'cli' %}"typer>=
 {{ projectName }} = "{{ packageName }}.cli:app"
 {% endif %}{% endblock %}
 {% block development %}[dependency-groups]
-dev = ["mypy>=2.3,<3", "ruff>=0.16,<1"{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% endif %}]
+dev = ["mypy>=2.3,<3", "ruff>=0.16,<1"{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% if profile == 'service' %}, "httpx>=0.28,<1"{% endif %}{% endif %}]
 {% endblock %}
 {% block buildTarget %}{% if profile != 'native' %}[tool.hatch.build.targets.wheel]
 packages = ["src/{{ packageName }}"]
@@ -25,10 +25,10 @@ wheel.packages = ["src/{{ packageName }}"]
 {% endif %}{% endblock %}
 {% block quality %}[tool.ruff]
 target-version = "{{ ruffTarget | default('py312') }}"
-line-length = 100
+line-length = 88
 
 [tool.ruff.lint]
-select = ["B", "E", "F", "I", "RUF", "UP"]
+select = ["B", "E", "F", "I", "N", "RUF", "UP"]
 
 [tool.mypy]
 python_version = "{{ pythonMinimum | default('3.12') }}"

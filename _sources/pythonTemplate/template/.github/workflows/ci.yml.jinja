@@ -33,8 +33,7 @@ jobs:
         run: uv run --locked pytest
       - name: Test status
         if: hashFiles('tests/test_*.py', 'tests/**/test_*.py') == ''
-        run: |
-          echo 'NOT_CONFIGURED: no tests yet'
+        run: echo 'NOT_CONFIGURED: no technical or subject tests yet'
       - run: uv build
 {% if profile == 'service' %}      - run: docker build --file Dockerfile --tag {{ packageName }}:ci .
       - run: uv run --locked python -c 'from {{ packageName }}.app import app; print(app.title)'

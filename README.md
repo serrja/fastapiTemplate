@@ -13,7 +13,7 @@ uv run --no-project --with 'copier==9.17.2' copier copy . "$destination" \
 cd "$destination"
 uv lock
 uv sync --locked
-uv run --locked uvicorn exampleApi.app:createApp --factory --host 127.0.0.1 --port 8000
+uv run --locked uvicorn exampleapi.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 The default starts with no DSN, credentials, or product routes. Optional PostgreSQL adds engine/session and Alembic wiring without schema or automatic migration. `withTesting=false` and `withCi=false` omit those capabilities, including dependencies and workflow files.
@@ -22,13 +22,13 @@ The default starts with no DSN, credentials, or product routes. Optional Postgre
 
 `composition.toml` declares inherited paths, permitted overrides, and a smoke answer set. `_sources/pythonTemplate` is a pinned source snapshot; `template/` and `composition.lock.json` are derived and must not be edited by hand. The lock records the actual parent files, overlay, and this derivative's `copier.yml` by content SHA-256; a recorded Git HEAD alone is insufficient for dirty worktrees. The parent repository owns the composition ADR; this README contains the standalone command:
 
-The root `tools/composeTemplate.py` is also a checked mirror of the pinned Python-base tool. An explicit parent refresh updates it after verifying that it still matches the previous snapshot.
+The root `tools/compose_template.py` is also a checked mirror of the pinned Python-base tool. An explicit parent refresh updates it after verifying that it still matches the previous snapshot.
 
 The derivative is currently `0.1.0.dev0` with answers schema 1; these are local worktree identifiers, not a published template release. The exact source identity is in `composition.lock.json`.
 
 ```bash
-uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . --smoke
-uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . \
+uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . --smoke
+uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . \
   --refresh-base /path/to/pythonTemplate --smoke
 ```
 

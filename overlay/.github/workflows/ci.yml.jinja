@@ -41,7 +41,7 @@ jobs:
           uv venv "$RUNNER_TEMP/wheelCheck" --python 3.12
           uv pip install --python "$RUNNER_TEMP/wheelCheck/bin/python" dist/*.whl
           cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/wheelCheck/bin/python" -c 'from {{ packageName }}.app import createApp; print(createApp().title)'
+          "$RUNNER_TEMP/wheelCheck/bin/python" -c 'from {{ packageName }}.app import create_app; print(create_app().title)'
 {% if withDocker %}      - name: Container build
         run: docker build --file Dockerfile --tag {{ packageName | lower }}:ci .
 {% endif %}

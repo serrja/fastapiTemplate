@@ -27,7 +27,7 @@ uv build
 
 ## 🧪 Testing
 
-No subject tests are included yet. `uv run --locked pytest` returns exit code 5 until tests are added; CI marks this stage `NOT_CONFIGURED`. Add tests for real behavior before claiming coverage.
+{% if profile == 'service' and withTesting | default(true) %}The generated service includes a technical HTTP/lifespan regression test. Run `uv run --locked pytest`; add behavior tests as the service grows. Database integration needs an isolated PostgreSQL instance and is separate from the no-network check.{% else %}This profile has no subject tests yet. `uv run --locked pytest` returns exit code 5 until tests are added; CI marks this stage `NOT_CONFIGURED`. Add tests for real behavior before claiming coverage.{% endif %}
 
 ## 📚 Documentation
 
