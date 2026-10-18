@@ -22,12 +22,12 @@ uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy
-uv build
+make build
 ```
 
 ## 🧪 Testing
 
-{% if profile == 'service' and withTesting | default(true) %}The generated service includes a technical HTTP/lifespan regression test. Run `uv run --locked pytest`; add behavior tests as the service grows. Database integration needs an isolated PostgreSQL instance and is separate from the no-network check.{% else %}This profile has no subject tests yet. `uv run --locked pytest` returns exit code 5 until tests are added; CI marks this stage `NOT_CONFIGURED`. Add tests for real behavior before claiming coverage.{% endif %}
+{% if withTesting | default(true) %}Run `make check` for locked lint, types, meaningful foundation tests, and the full Python statement/branch coverage gate. JSON/XML reports are written under `coverage/`. Keep application tests alongside the managed `tests/foundation/` suite. A library or empty native adapter has no generated domain behavior; import checks do not prove native algorithms. Database integration requires disposable PostgreSQL and is separate from no-network checks.{% else %}Testing support was explicitly omitted. `make test` fails with an explanation; no test or coverage success is claimed.{% endif %}
 
 ## 📚 Documentation
 

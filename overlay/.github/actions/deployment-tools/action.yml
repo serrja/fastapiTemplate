@@ -1,0 +1,20 @@
+name: Deployment tools
+description: Install checksum-pinned Helm, Kind and kubectl in this CI job only.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        tool_dir="$RUNNER_TEMP/deployment-tools"
+        mkdir -p "$tool_dir"
+        curl --fail --silent --show-error --location https://get.helm.sh/helm-v4.3.1-linux-amd64.tar.gz --output "$tool_dir/helm.tar.gz"
+        printf '%s  %s\n' 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b "$tool_dir/helm.tar.gz" | sha256sum --check
+        tar --extract --gzip --file "$tool_dir/helm.tar.gz" --directory "$tool_dir" linux-amd64/helm
+        mv "$tool_dir/linux-amd64/helm" "$tool_dir/helm"
+        curl --fail --silent --show-error --location https://dl.k8s.io/release/v1.37.0/bin/linux/amd64/kubectl --output "$tool_dir/kubectl"
+        printf '%s  %s\n' 6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f "$tool_dir/kubectl" | sha256sum --check
+        curl --fail --silent --show-error --location https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 --output "$tool_dir/kind"
+        printf '%s  %s\n' aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d "$tool_dir/kind" | sha256sum --check
+        chmod 700 "$tool_dir/helm" "$tool_dir/kubectl" "$tool_dir/kind"
+        echo "$tool_dir" >> "$GITHUB_PATH"

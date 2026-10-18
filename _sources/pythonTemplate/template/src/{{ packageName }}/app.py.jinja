@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import {% if withPersistence | default(false) %}AsyncExitStack, {% endif %}asynccontextmanager
 
 from fastapi import FastAPI
-{% if withPersistence | default(false) %}from sqlalchemy.ext.asyncio import AsyncEngine
-{% endif %}
+
 from {{ packageName }}.health import router as health_router
 {% if withPersistence | default(false) %}from {{ packageName }}.persistence import create_engine
 {% endif %}from {{ packageName }}.settings import ServiceSettings
@@ -22,16 +21,14 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
         """Release enabled resources even when startup fails."""
         resolved_settings = settings if settings is not None else ServiceSettings()
         logging.getLogger("{{ projectName }}").setLevel(resolved_settings.log_level)
-{% if withPersistence | default(false) %}        engine: AsyncEngine | None = None
-        try:
+{% if withPersistence | default(false) %}        async with AsyncExitStack() as stack:
             engine = create_engine(resolved_settings)
+            stack.push_async_callback(engine.dispose)
             application.state.db_engine = engine
-            yield
-        finally:
-            if hasattr(application.state, "db_engine"):
+            try:
+                yield
+            finally:
                 del application.state.db_engine
-            if engine is not None:
-                await engine.dispose()
 {% else %}        yield
 {% endif %}
     application = FastAPI(title="{{ projectName }}", lifespan=lifespan)

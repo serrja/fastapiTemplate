@@ -1,4 +1,4 @@
-templateVersion = "0.1.0.dev0"
+templateVersion = "0.2.0.dev0"
 answersSchema = 1
 snapshot = "_sources/pythonTemplate"
 overlay = "overlay"
@@ -9,11 +9,15 @@ include = [
   ".gitignore",
   ".pre-commit-config.yaml",
   ".github/PULL_REQUEST_TEMPLATE.md.jinja",
+  ".github/actions/actionlint/action.yml",
+  ".github/ISSUE_TEMPLATE/bug.yml",
+  ".github/ISSUE_TEMPLATE/feature.yml",
   ".github/workflows/ci.yml.jinja",
   ".github/workflows/release.yml.jinja",
   "AGENTS.md.jinja",
   "CONTRIBUTING.md.jinja",
   "PROJECT.md.jinja",
+  "Makefile.jinja",
   "README.md.jinja",
   "pyproject.toml.jinja",
   "docs/architecture.md.jinja",
@@ -22,7 +26,8 @@ include = [
   "alembic.ini.jinja",
   "migrations/env.py.jinja",
   "migrations/versions/.gitkeep",
+  "tests/foundation/test_package.py.jinja",
 ]
-allowOverride = ["README.md.jinja", "CONTRIBUTING.md.jinja", "pyproject.toml.jinja", "docs/architecture.md.jinja", ".github/workflows/ci.yml.jinja"]
-retainBase = { "pyproject.toml.jinja" = "_base/pyproject.toml.jinja" }
+allowOverride = ["README.md.jinja", "CONTRIBUTING.md.jinja", "pyproject.toml.jinja", "Makefile.jinja", "docs/architecture.md.jinja", ".github/workflows/ci.yml.jinja"]
+retainBase = { "pyproject.toml.jinja" = "_base/pyproject.toml.jinja", "Makefile.jinja" = "_base/Makefile.jinja" }
 smokeAnswers = { projectName = "sampleApi", withPersistence = false, withTesting = false, withCi = false }

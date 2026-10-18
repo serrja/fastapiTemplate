@@ -1,0 +1,52 @@
+[project]
+name = "fastapi-template-maintenance"
+version = "0.2.0.dev0"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "copier==9.17.2",
+    "mypy>=2.3,<3",
+    "pytest>=9,<10",
+    "pytest-cov>=7,<8",
+    "PyYAML>=6,<7",
+    "ruff==0.16.4",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "N", "RUF", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+explicit_package_bases = true
+files = ["tools"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config"
+testpaths = ["tests", "tools/test_composition.py"]
+pythonpath = ["."]
+
+[tool.coverage.run]
+branch = true
+source = ["tools"]
+omit = ["tools/test_composition.py"]
+
+[tool.coverage.report]
+fail_under = 100
+precision = 2
+show_missing = true
+
+[tool.coverage.json]
+output = "coverage/coverage.json"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"

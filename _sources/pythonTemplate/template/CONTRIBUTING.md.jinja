@@ -12,7 +12,7 @@ uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy
-uv build
+make build
 ```
 
-{% if profile == 'service' and withTesting | default(true) %}This scaffold includes a technical HTTP/lifespan test. Run `uv run --locked pytest`; add subject tests when behavior is implemented.{% else %}No subject tests are provided by this profile. Until real tests exist, status is `notConfigured`; raw `uv run --locked pytest` exits 5. Once tests exist, treat empty collection as failure.{% endif %} CI, package release, and deployment are separate from a local build. Record this project's decisions in `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %}.
+{% if withTesting | default(true) %}Run `make check` for locked lint, types, foundation tests, and complete Python statement/branch coverage. Foundation tests live under `tests/foundation/`; keep application tests separate so an update preserves them. An empty test collection is a failure. External integrations need disposable resources; a simulated fault is not database acceptance.{% else %}Testing support was explicitly omitted from this render. `make test` fails with that reason; enable the capability and add real behavior tests before claiming verification.{% endif %} CI, package release, and deployment are separate from a local build. Record this project's decisions in `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %}.

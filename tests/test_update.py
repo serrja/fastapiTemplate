@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import io
 import shutil
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
+BASELINE_SOURCE = "610999b343178413ee49db30e5da2f6d1164d220"
 COPIER = [sys.executable, "-m", "copier"]
 
 
 def _run(*args: str, cwd: Path | None = None) -> str:
     completed = subprocess.run(
-        list(args), cwd=cwd, capture_output=True, text=True, check=True, timeout=60
+        list(args), cwd=cwd, capture_output=True, text=True, check=False, timeout=60
     )
+    assert completed.returncode == 0, completed.stderr + completed.stdout
     return completed.stdout.strip()
 
 
@@ -70,23 +76,111 @@ def test_copier_update_keeps_owner_documents_and_settings(tmp_path: Path) -> Non
     _commit(output, (".",), "initial render")
     owner_doc = output / "SERVICE.md"
     owner_settings = output / "src/sampleapi/settings.py"
+    owner_test = output / "tests/test_http.py"
+    owner_values = output / "deploy/values.yaml"
     owner_doc.write_text(owner_doc.read_text() + "\nOwner service policy.\n")
     owner_settings.write_text(owner_settings.read_text() + "\n# owner setting\n")
-    _commit(output, ("SERVICE.md", "src/sampleapi/settings.py"), "owner edits")
+    owner_test.write_text(owner_test.read_text() + "\n# owner test scenario\n")
+    owner_values.write_text(owner_values.read_text() + "\n# owner artifact digest\n")
+    _commit(
+        output,
+        (
+            "SERVICE.md",
+            "src/sampleapi/settings.py",
+            "tests/test_http.py",
+            "deploy/values.yaml",
+        ),
+        "owner edits",
+    )
 
     source_health = source / "template/src/{{ packageName }}/api/health.py.jinja"
     source_health.write_text(source_health.read_text() + "\n# managed health marker\n")
+    source_chart = source / "template/deploy/chart/templates/service.yaml"
+    source_chart.write_text(source_chart.read_text() + "\n# managed chart marker\n")
     second = _commit(
         source,
-        ("template/src/{{ packageName }}/api/health.py.jinja",),
+        (
+            "template/src/{{ packageName }}/api/health.py.jinja",
+            "template/deploy/chart/templates/service.yaml",
+        ),
         "update managed health",
     )
     _run(*COPIER, "update", "--quiet", "--defaults", f"--vcs-ref={second}", cwd=output)
     assert "Owner service policy." in owner_doc.read_text()
     assert "# owner setting" in owner_settings.read_text()
+    assert "# owner test scenario" in owner_test.read_text()
+    assert "# owner artifact digest" in owner_values.read_text()
+    assert (
+        "# managed chart marker"
+        in (output / "deploy/chart/templates/service.yaml").read_text()
+    )
     assert (
         "# managed health marker"
         in (output / "src/sampleapi/api/health.py").read_text()
     )
+    assert not _git(output, "ls-files", "-u")
+    assert not list(output.rglob("*.rej"))
+
+
+@pytest.mark.parametrize("persistence", [False, True])
+def test_update_from_committed_baseline_keeps_project_tests_and_data(
+    tmp_path: Path, persistence: bool
+) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    archive = subprocess.check_output(
+        ["git", "-C", str(ROOT), "archive", BASELINE_SOURCE, "copier.yml", "template"]
+    )
+    with tarfile.open(fileobj=io.BytesIO(archive)) as bundle:
+        bundle.extractall(source, filter="data")
+    _git(source, "init", "--quiet")
+    first = _commit(source, ("copier.yml", "template"), "committed baseline")
+    output = tmp_path / "application"
+    _run(
+        *COPIER,
+        "copy",
+        "--quiet",
+        "--defaults",
+        f"--vcs-ref={first}",
+        str(source),
+        str(output),
+        "-d",
+        "projectName=sampleApi",
+        "-d",
+        f"withPersistence={str(persistence).lower()}",
+        "-d",
+        "withCi=false",
+        "-d",
+        "withDocker=false",
+    )
+    _git(output, "init", "--quiet")
+    _commit(output, (".",), "baseline render")
+    owned = [
+        output / name
+        for name in (
+            "SERVICE.md",
+            "PROJECT.md",
+            "src/sampleapi/settings.py",
+            "tests/test_http.py",
+        )
+    ]
+    if persistence:
+        owned.append(output / "migrations/versions/owner_revision.py")
+        owned[-1].write_text('"""Project-owned historical revision fixture."""\n')
+    for path in owned:
+        path.write_text(path.read_text() + "\n# Project-owned content\n")
+    before = {path.relative_to(output): path.read_bytes() for path in owned}
+    _commit(output, tuple(str(p) for p in before), "owner changes")
+    shutil.rmtree(source / "template")
+    shutil.copytree(ROOT / "template", source / "template")
+    shutil.copy2(ROOT / "copier.yml", source / "copier.yml")
+    second = _commit(source, ("copier.yml", "template"), "new managed foundation")
+    _run(*COPIER, "update", "--quiet", "--defaults", f"--vcs-ref={second}", cwd=output)
+    for path, content in before.items():
+        assert (output / path).read_bytes() == content
+    assert (output / "tests/foundation/test_http.py").is_file()
+    assert (output / "Makefile").is_file()
+    assert (output / "deploy/chart/Chart.yaml").is_file()
+    assert (output / "deploy/values.yaml").is_file()
     assert not _git(output, "ls-files", "-u")
     assert not list(output.rglob("*.rej"))

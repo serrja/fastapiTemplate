@@ -1,0 +1,31 @@
+"""Verify the published command and module entry points."""
+
+from __future__ import annotations
+
+import runpy
+import sys
+
+import pytest
+from typer.testing import CliRunner
+
+from {{ packageName }}.cli import app
+
+
+def test_command_help_and_empty_invocation() -> None:
+    runner = CliRunner()
+    help_result = runner.invoke(app, ["--help"])
+    assert help_result.exit_code == 0
+    assert "{{ projectName }} command-line interface" in help_result.output
+    assert runner.invoke(app, []).exit_code == 0
+
+
+def test_module_entrypoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["{{ packageName }}", "--help"])
+    with pytest.raises(SystemExit) as result:
+        runpy.run_module("{{ packageName }}", run_name="__main__")
+    assert result.value.code == 0
+
+
+def test_module_import_does_not_execute_command() -> None:
+    namespace = runpy.run_module("{{ packageName }}", run_name="module_probe")
+    assert namespace["app"] is app

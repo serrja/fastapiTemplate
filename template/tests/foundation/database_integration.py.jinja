@@ -1,0 +1,64 @@
+"""Explicit acceptance against disposable PostgreSQL, never a user's database."""
+
+from __future__ import annotations
+
+import asyncio
+import os
+from uuid import uuid4
+
+from fastapi import Request
+from httpx import ASGITransport, AsyncClient
+from pytest import MonkeyPatch
+from sqlalchemy import text
+
+from {{ packageName }}.app import create_app
+from {{ packageName }}.persistence import open_session
+
+
+def test_real_readiness_and_transaction_ownership(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", os.environ["TEST_DATABASE_URL"])
+    application = create_app()
+    table = "foundation_probe_" + uuid4().hex
+
+    async def exercise() -> None:
+        async with application.router.lifespan_context(application):
+            engine = application.state.resources.engine
+            async with engine.begin() as connection:
+                await connection.execute(text(f"CREATE TABLE {table} (id integer)"))
+            try:
+                request = Request({"type": "http", "app": application})
+                transaction = open_session(request)
+                session = await anext(transaction)
+                await session.execute(text(f"INSERT INTO {table} VALUES (1)"))
+                try:
+                    await anext(transaction)
+                except StopAsyncIteration:
+                    pass
+                assert not session.in_transaction()
+
+                transaction = open_session(request)
+                session = await anext(transaction)
+                await session.execute(text(f"INSERT INTO {table} VALUES (2)"))
+                try:
+                    await transaction.athrow(RuntimeError("synthetic rollback"))
+                except RuntimeError as error:
+                    assert str(error) == "synthetic rollback"
+                assert not session.in_transaction()
+
+                async with engine.connect() as connection:
+                    result = await connection.execute(
+                        text(f"SELECT id FROM {table} ORDER BY id")
+                    )
+                    assert list(result.scalars()) == [1]
+                async with AsyncClient(
+                    transport=ASGITransport(app=application), base_url="http://test"
+                ) as client:
+                    response = await client.get("/health/ready")
+                    assert response.status_code == 200
+                    assert response.json() == {"status": "ready"}
+            finally:
+                async with engine.begin() as connection:
+                    await connection.execute(text(f"DROP TABLE {table}"))
+        assert not hasattr(application.state, "resources")
+
+    asyncio.run(exercise())

@@ -9,11 +9,16 @@ _skip_if_exists:
   - SERVICE.md
   - "src/*/settings.py"
   - "migrations/**"
+  - "tests/test_http.py"
+  - "tests/database_integration.py"
+  - "deploy/values.yaml"
 _exclude:
   - "_base"
   - "_base/**"
   - "{% if not withCi %}.github/workflows{% endif %}"
   - "{% if not withCi %}.github/workflows/**{% endif %}"
+  - "{% if not withCi %}.github/actions{% endif %}"
+  - "{% if not withCi %}.github/actions/**{% endif %}"
   - "{% if not withTesting %}.pre-commit-config.yaml{% endif %}"
   - "{% if not withPersistence %}alembic.ini{% endif %}"
   - "{% if not withPersistence %}migrations/**{% endif %}"
@@ -24,6 +29,11 @@ _exclude:
   - "{% if not withTesting %}tests{% endif %}"
   - "{% if not withDocker %}Dockerfile{% endif %}"
   - "{% if not withDocker %}.dockerignore{% endif %}"
+  - "{% if not (withDocker and withPersistence and withTesting) %}compose.test.yaml{% endif %}"
+  - "{% if not withPersistence %}tests/foundation/database_integration.py{% endif %}"
+  - "{% if not withPersistence %}deploy/local{% endif %}"
+  - "{% if not (withKubernetes | default(false)) %}deploy{% endif %}"
+  - "{% if not (withKubernetes | default(false)) %}deploy/**{% endif %}"
 projectName:
   type: str
   help: "Stable application name; new Python import package is lowercase."
@@ -55,7 +65,12 @@ withTesting:
   type: bool
   default: true
   help: "Include technical HTTP, lifecycle, and configuration tests."
+withKubernetes:
+  type: bool
+  default: true
+  help: "Include values for the shared digest-pinned Helm deployment chart."
 withCi:
   type: bool
   default: true
   help: "Include CI for this generated application."
+  validator: "{% if withCi and not withTesting %}CI requires withTesting=true.{% endif %}"

@@ -14,6 +14,13 @@ Describe public API, wire/config/package/template/DB impact and migration or dep
 
 List exact commands, environment, and `passed` / `failed` / `notRun` / `blocked` results. No pre-checked boxes.
 
+Include the tested source SHA, statement/line and branch totals, and missing counts.
+
+## Artifacts and deployment
+
+State image input identity, build or reuse decision, verified digest, and cache backend/ACL.
+Describe migrations, deployment target, and rollback by digest; use N/A with a reason.
+
 ## Security, docs, and release
 
 Describe logs, secrets, permissions, supply chain, documentation changes, and version/release-note decision.

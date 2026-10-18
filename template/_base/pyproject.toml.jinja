@@ -16,7 +16,7 @@ dependencies = [{% block runtimeDependencies %}{% if profile == 'cli' %}"typer>=
 {{ projectName }} = "{{ packageName }}.cli:app"
 {% endif %}{% endblock %}
 {% block development %}[dependency-groups]
-dev = ["mypy>=2.3,<3", "ruff>=0.16,<1"{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% if profile == 'service' %}, "httpx>=0.28,<1"{% endif %}{% endif %}]
+dev = ["mypy>=2.3,<3", "ruff>=0.16,<1", "packaging>=25,<27"{% if profile == 'native' %}, "scikit-build-core>=0.11,<1", "pybind11>=3,<4"{% else %}, "hatchling>=1.27,<2"{% endif %}{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% if profile == 'service' %}, "httpx>=0.28,<1"{% endif %}{% endif %}{% block extraDevelopmentDependencies %}{% endblock %}]
 {% endblock %}
 {% block buildTarget %}{% if profile != 'native' %}[tool.hatch.build.targets.wheel]
 packages = ["src/{{ packageName }}"]
@@ -36,5 +36,25 @@ strict = true
 files = ["src/{{ packageName }}"]{% if withTesting | default(true) %}
 
 [tool.pytest.ini_options]
-addopts = "--strict-markers --strict-config"
-markers = ["unit: isolated unit tests", "integration: external dependency tests", "contract: public contract tests"]{% endif %}{% endblock %}{% block extraConfiguration %}{% endblock %}
+addopts = "--strict-markers --strict-config --import-mode=importlib"
+markers = ["unit: isolated unit tests", "integration: external dependency tests", "contract: public contract tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["{{ packageName }}"]
+
+[tool.coverage.paths]
+source = ["src/{{ packageName }}", "*/site-packages/{{ packageName }}"]
+
+[tool.coverage.report]
+fail_under = 100
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.json]
+output = "coverage/coverage.json"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"
+{% endif %}{% endblock %}{% block extraConfiguration %}{% endblock %}

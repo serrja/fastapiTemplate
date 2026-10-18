@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -12,70 +13,153 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  template:
+  source:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:17.11-trixie
-        env:
-          POSTGRES_USER: template_ci
-          POSTGRES_PASSWORD: template_ci
-          POSTGRES_DB: template_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U template_ci -d template_ci"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 20
-    strategy:
-      fail-fast: false
-      matrix:
-        persistence: [false, true]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7.1.3
         with:
           version: "0.12.15"
           enable-cache: true
+          cache-dependency-glob: uv.lock
       - run: uv python install 3.12
-      - name: Verify pinned source and compose
-        run: uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/compose_template.py --repo . --smoke
-      - name: Copier update regression
-        run: uv run --no-project --python 3.12 --with 'copier==9.17.2' --with 'pytest>=9,<10' pytest -q tests
-      - name: Render
-        run: uv run --no-project --with 'copier==9.17.2' copier copy --defaults . "$RUNNER_TEMP/rendered" -d projectName=exampleApi -d withPersistence=${{ matrix.persistence }}
-      - name: Lock, lint, type, build
+      - uses: ./template/.github/actions/actionlint
+      - uses: ./template/.github/actions/deployment-tools
+      - run: |
+          uv sync --locked --python 3.12
+          make check chart-check
+          uv run --locked python tools/compose_template.py --repo . --smoke
+      - name: Maintenance coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: maintenance-coverage
+          path: coverage/
+          if-no-files-found: error
+  template:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {variant: noDbContainer, persistence: false, docker: true, kubernetes: true}
+          - {variant: dbContainer, persistence: true, docker: true, kubernetes: true}
+          - {variant: noDbHost, persistence: false, docker: false, kubernetes: false}
+          - {variant: dbHost, persistence: true, docker: false, kubernetes: false}
+    services:
+      postgres:
+        image: postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+        env:
+          POSTGRES_USER: foundation
+          POSTGRES_PASSWORD: synthetic-test-only
+          POSTGRES_DB: foundation
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U foundation -d foundation"
+          --health-interval 2s --health-timeout 2s --health-retries 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7.1.3
+        with:
+          version: "0.12.15"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install 3.12
+      - name: Fresh render with restrictive umask
+        run: |
+          umask 077
+          uv run --locked copier copy --defaults . "$RUNNER_TEMP/rendered" -d projectName=exampleApi -d withPersistence=${{ matrix.persistence }} -d withDocker=${{ matrix.docker }} -d withKubernetes=${{ matrix.kubernetes }}
+      - uses: ./template/.github/actions/actionlint
+        with:
+          directory: ${{ runner.temp }}/rendered
+      - name: Resolve the fresh render, then enforce its lock and full suite
         working-directory: ${{ runner.temp }}/rendered
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://foundation:synthetic-test-only@127.0.0.1:5432/foundation
         run: |
           uv lock
           uv sync --locked --python 3.12
-          uv run --locked ruff check .
-          uv run --locked ruff format --check .
-          uv run --locked mypy
-          uv run --locked pytest -q
-          uv build
-      - name: Disposable database readiness and migrations
-        if: matrix.persistence
+          make check
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        if: matrix.docker
+      - name: Cached test image
+        if: matrix.docker
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ runner.temp }}/rendered
+          target: test
+          load: true
+          tags: exampleapi:test
+          cache-from: type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+      - name: Fresh installed-wheel tests
+        if: matrix.docker
+        working-directory: ${{ runner.temp }}/rendered
+        run: make test-image
+      - name: Cached runtime image
+        if: matrix.docker
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ runner.temp }}/rendered
+          target: runtime
+          load: true
+          tags: exampleapi:candidate
+          cache-from: |
+            type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+            type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-runtime-linux-amd64-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-${{ matrix.variant }}-runtime-linux-amd64-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'main' }}
+      - name: Canonical artifacts
+        working-directory: ${{ runner.temp }}/rendered
+        run: make build
+      - uses: ./template/.github/actions/deployment-tools
+        if: matrix.kubernetes
+      - name: Chart validation and packaging
+        if: matrix.kubernetes
+        working-directory: ${{ runner.temp }}/rendered
+        run: make chart-check chart
+      - name: Local Kind acceptance
+        if: matrix.kubernetes
         working-directory: ${{ runner.temp }}/rendered
         env:
-          TEST_DATABASE_URL: postgresql+asyncpg://template_ci:template_ci@127.0.0.1:5432/template_ci
-          DATABASE_URL: postgresql+asyncpg://template_ci:template_ci@127.0.0.1:5432/template_ci
+          KUBECONFIG: ${{ runner.temp }}/foundation-kubeconfig
         run: |
-          uv run --locked pytest -q tests/database_integration.py
-          uv run --locked alembic upgrade head
-      - name: Container build
+          set -euo pipefail
+          make deploy-local KUBECONFIG_LOCAL="$KUBECONFIG"
+          trap 'make undeploy-local' EXIT
+          kubectl --context kind-exampleapi-local -n foundation port-forward service/exampleapi 18080:8000 > "$RUNNER_TEMP/port-forward.log" 2>&1 &
+          curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:18080/health/ready
+          helm upgrade exampleapi deploy/chart --kube-context kind-exampleapi-local --namespace foundation --reuse-values --set replicaCount=3 --wait --timeout 120s --rollback-on-failure
+          helm rollback exampleapi 1 --kube-context kind-exampleapi-local --namespace foundation --wait --timeout 120s
+      - name: Save the verified local runtime
+        if: matrix.docker
         working-directory: ${{ runner.temp }}/rendered
-        run: docker build --file Dockerfile --tag example-api:ci .
-      - name: Image liveness startup
         run: |
-          container="$(docker run --detach --rm --publish 127.0.0.1::8000 --env DATABASE_URL=postgresql+asyncpg://ci:ci@127.0.0.1:1/ci example-api:ci)"
-          trap 'docker rm --force "$container" >/dev/null' EXIT
-          port="$(docker port "$container" 8000/tcp | tail -n 1 | cut -d: -f2)"
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent "http://127.0.0.1:$port/health/live"; then exit 0; fi
-            sleep 1
-          done
-          docker logs --tail 20 "$container"
-          exit 1
+          docker image inspect exampleapi:candidate > dist/runtime-image.json
+          docker save exampleapi:candidate | gzip --no-name > dist/runtime-image.docker.tar.gz
+          find dist -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > dist/SHA256SUMS
+      - name: Evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: render-${{ matrix.variant }}
+          path: |
+            ${{ runner.temp }}/rendered/coverage/
+            ${{ runner.temp }}/rendered/dist/
+          if-no-files-found: error
+  required:
+    if: always()
+    needs: [source, template]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          TEMPLATE_RESULT: ${{ needs.template.result }}
+        run: test "$SOURCE_RESULT" = success && test "$TEMPLATE_RESULT" = success

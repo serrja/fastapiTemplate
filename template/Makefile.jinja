@@ -1,0 +1,60 @@
+{% extends baseMakefileTemplate | default("template/_base/Makefile.jinja") %}
+{% block buildCommand %}{% if withDocker %}build: ## Export the wheel and sdist from the canonical container build.
+	docker buildx build --target artifacts --output type=local,dest=dist .
+
+.PHONY: image
+image: ## Build and load the immutable runtime candidate locally.
+	@mkdir -p dist
+	docker buildx build --target runtime --load --tag {{ packageName }}:candidate --metadata-file dist/image-build.json .
+{% else %}{{ super() }}{% endif %}{% endblock %}
+{% block extraCommands %}
+.PHONY: run
+
+run: ## Run the application on loopback without rebuilding.
+	$(UV) run --locked uvicorn {{ packageName }}.app:create_app --factory --host 127.0.0.1 --port 8000
+{% if withPersistence and withTesting %}
+.PHONY: test-integration
+test: test-integration
+
+test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a disposable DB.
+	$(UV) run --locked pytest tests/foundation/database_integration.py
+{% endif %}{% if withDocker and withTesting %}
+.PHONY: test-image
+test-image: ## Run installed-wheel tests in a disposable container and, when enabled, PostgreSQL.
+	@mkdir -p coverage
+	docker buildx build --target test --load --tag {{ packageName }}:test .
+{% if withPersistence %}	@set -eu; project="{{ packageName }}test$$(python3 -c 'import uuid; print(uuid.uuid4().hex[:12])')"; \
+	trap 'docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" down --volumes --remove-orphans' EXIT HUP INT TERM; \
+	TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up --abort-on-container-exit --exit-code-from tests tests
+{% else %}	docker run --rm --read-only --network none --tmpfs /tmp:rw,noexec,nosuid,size=64m --user "$$(id -u):$$(id -g)" --mount type=bind,source="$$(pwd)/coverage",target=/checks/coverage {{ packageName }}:test
+{% endif %}{% endif %}{% if withKubernetes %}
+HELM ?= helm
+KIND ?= kind
+KUBECTL ?= kubectl
+KUBECONFIG_LOCAL ?= $(CURDIR)/.local/kubeconfig
+KIND_IMAGE := kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+
+.PHONY: chart chart-check
+chart: ## Package the managed shared chart as a deployable artifact.
+	$(HELM) package deploy/chart --destination dist
+
+chart-check: ## Check chart templates and schema with explicit validation-only values.
+	$(HELM) lint deploy/chart --strict --set image.repository=validation.invalid/application --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+{% if withDocker %}
+.PHONY: deploy-local undeploy-local
+deploy-local: image ## Create a disposable Kind contour; no external kubeconfig is used.
+	@mkdir -p .local
+	$(KIND) create cluster --name {{ packageName }}-local --image $(KIND_IMAGE) --kubeconfig $(KUBECONFIG_LOCAL) --wait 180s
+	$(KIND) load docker-image {{ packageName }}:candidate --name {{ packageName }}-local
+	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local create namespace foundation
+{% if withPersistence %}	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation apply -f deploy/local/postgres.yaml
+	docker pull postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+	docker tag postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3 foundation-postgres:local-2d2b8998d310
+	$(KIND) load docker-image foundation-postgres:local-2d2b8998d310 --name {{ packageName }}-local
+	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation set image deployment/foundation-database database=foundation-postgres:local-2d2b8998d310
+	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation rollout status deployment/foundation-database --timeout=120s
+{% endif %}	$(HELM) upgrade --install {{ packageName }} deploy/chart --kubeconfig $(KUBECONFIG_LOCAL) --kube-context kind-{{ packageName }}-local --namespace foundation --wait --timeout 120s --rollback-on-failure --values deploy/values.yaml --set image.repository={{ packageName }} --set image.tag=candidate --set localDevelopment=true{% if withPersistence %} --set database.secretName=foundation-database --set migration.enabled=true{% endif %}
+
+undeploy-local: ## Delete only this application's disposable Kind cluster.
+	$(KIND) delete cluster --name {{ packageName }}-local
+{% endif %}{% endif %}{% endblock %}

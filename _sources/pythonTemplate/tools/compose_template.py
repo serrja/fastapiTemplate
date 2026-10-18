@@ -22,7 +22,7 @@ IGNORED_PARTS = {
     ".ruff_cache",
     ".pytest_cache",
 }
-BASE_TEMPLATE_VERSION = "0.1.0.dev0"
+BASE_TEMPLATE_VERSION = "0.2.0.dev0"
 BASE_ANSWERS_SCHEMA = 1
 
 
@@ -74,6 +74,9 @@ def stamp_base(repo: Path) -> str:
     }
     files["copier.yml"] = repo / "copier.yml"
     files["tools/compose_template.py"] = repo / "tools/compose_template.py"
+    shared_tests = repo / "tools/test_composition.py"
+    if shared_tests.is_file():
+        files["tools/test_composition.py"] = shared_tests
     identity = content_identity(files)
     (repo / "template/.template-source.json").write_text(
         json.dumps(
@@ -99,8 +102,9 @@ def refresh_snapshot(repo: Path, base: Path, snapshot: Path) -> None:
     files = source_files(source)
     parent_config = base / "copier.yml"
     parent_tool = base / "tools/compose_template.py"
+    parent_tests = base / "tools/test_composition.py"
     parent_record = base / "composition.lock.json"
-    for name in ("composeTemplate.py", "compose_template.py"):
+    for name in ("composeTemplate.py", "compose_template.py", "test_composition.py"):
         derived_tool = repo / "tools" / name
         previous_tool = snapshot / "tools" / name
         if derived_tool.is_file() and (
@@ -125,6 +129,10 @@ def refresh_snapshot(repo: Path, base: Path, snapshot: Path) -> None:
             (staging / "tools").mkdir()
             shutil.copy2(parent_tool, staging / "tools/compose_template.py")
             source_set["tools/compose_template.py"] = parent_tool
+        if parent_tests.is_file():
+            (staging / "tools").mkdir(exist_ok=True)
+            shutil.copy2(parent_tests, staging / "tools/test_composition.py")
+            source_set["tools/test_composition.py"] = parent_tests
         if parent_record.is_file():
             shutil.copy2(parent_record, staging / "composition.lock.json")
             source_set["composition.lock.json"] = parent_record
@@ -178,10 +186,19 @@ def refresh_snapshot(repo: Path, base: Path, snapshot: Path) -> None:
         legacy_tool = repo / "tools/composeTemplate.py"
         legacy_tool.unlink(missing_ok=True)
         if parent_tool.is_file():
+            (repo / "tools").mkdir(parents=True, exist_ok=True)
             shutil.copy2(
                 snapshot / "tools/compose_template.py",
                 repo / "tools/compose_template.py",
             )
+        if parent_tests.is_file():
+            (repo / "tools").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(
+                snapshot / "tools/test_composition.py",
+                repo / "tools/test_composition.py",
+            )
+        else:
+            (repo / "tools/test_composition.py").unlink(missing_ok=True)
     finally:
         if staging.exists():
             shutil.rmtree(staging)
@@ -192,19 +209,20 @@ def assemble(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
     answers_schema = config["answersSchema"]
     if not isinstance(template_version, str) or not template_version:
         raise ValueError("Derivative templateVersion must be a nonempty string")
-    if not isinstance(answers_schema, int) or answers_schema < 1:
+    if type(answers_schema) is not int or answers_schema < 1:
         raise ValueError("Derivative answersSchema must be a positive integer")
     snapshot = repo / config["snapshot"]
-    derived_tool = repo / "tools/compose_template.py"
-    if derived_tool.is_file():
-        pinned_tool = snapshot / "tools/compose_template.py"
-        if (
-            not pinned_tool.is_file()
-            or derived_tool.read_bytes() != pinned_tool.read_bytes()
-        ):
-            raise ValueError(
-                "Derivative composition tool differs from the pinned parent"
-            )
+    for name in ("compose_template.py", "test_composition.py"):
+        derived_tool = repo / "tools" / name
+        if derived_tool.is_file():
+            pinned_tool = snapshot / "tools" / name
+            if (
+                not pinned_tool.is_file()
+                or derived_tool.read_bytes() != pinned_tool.read_bytes()
+            ):
+                raise ValueError(
+                    "Derivative composition file differs from the pinned parent"
+                )
     overlay = repo / config["overlay"]
     output = repo / config["output"]
     identity_record = json.loads((snapshot / "sourceIdentity.json").read_text())
