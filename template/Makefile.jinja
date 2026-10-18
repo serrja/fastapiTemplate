@@ -1,4 +1,8 @@
 {% extends baseMakefileTemplate | default("template/_base/Makefile.jinja") %}
+{% block fullTestTarget %}{% if withPersistence and withTesting %}test: ## Measure integration and isolated tests together without stale coverage.
+	$(UV) run --locked python -m coverage run -m pytest tests/foundation/database_integration.py $(wildcard tests/*_integration.py) $(INTEGRATION_TEST_PATHS)
+	$(UV) run --locked pytest --cov --cov-append --cov-report=term-missing --cov-report=json --cov-report=xml
+{% else %}{{ super() }}{% endif %}{% endblock %}
 {% block buildCommand %}{% if withDocker %}build: ## Export the wheel and sdist from the canonical container build.
 	docker buildx build $(DOCKER_BUILD_ARGS) --target artifacts --output type=local,dest=dist .
 
@@ -10,14 +14,16 @@ image: ## Build and load the immutable runtime candidate locally.
 {% block extraCommands %}
 .PHONY: run
 
+HTTP_HOST ?= 127.0.0.1
+HTTP_PORT ?= 8000
+UVICORN_FLAGS ?=
+
 run: ## Run the application on loopback without rebuilding.
-	$(UV) run --locked uvicorn {{ packageName }}.app:create_app --factory --host 127.0.0.1 --port 8000
+	$(UV) run --locked uvicorn {{ packageName }}.app:create_app --factory --host "$(HTTP_HOST)" --port "$(HTTP_PORT)" $(UVICORN_FLAGS)
 {% if withPersistence and withTesting %}
 .PHONY: test-integration
-test: test-integration
-
 test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a disposable DB.
-	$(UV) run --locked pytest tests/foundation/database_integration.py
+	$(UV) run --locked pytest tests/foundation/database_integration.py $(wildcard tests/*_integration.py) $(INTEGRATION_TEST_PATHS)
 {% endif %}{% if withDocker and withTesting %}
 .PHONY: test-image
 test-image: ## Run installed-wheel tests in a disposable container and, when enabled, PostgreSQL.

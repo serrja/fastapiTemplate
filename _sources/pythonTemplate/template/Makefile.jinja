@@ -26,7 +26,8 @@ typecheck: ## Check strict Python types.
 	@echo 'Testing was disabled for this render.' >&2
 	@exit 2
 {% endif %}
-test: test-unit ## Run every test required by this project's capabilities.
+{% block fullTestTarget %}test: test-unit ## Run every test required by this project's capabilities.
+{% endblock %}
 
 check: lint typecheck{% if withTesting | default(true) %} test{% endif %} ## Run the mandatory non-mutating checks.
 	$(UV) lock --check
@@ -37,3 +38,6 @@ check: lint typecheck{% if withTesting | default(true) %} test{% endif %} ## Run
 run: ## Run the existing command without rebuilding.
 	$(UV) run --locked {{ projectName }}
 {% endif %}{% block extraCommands %}{% endblock %}
+
+# Project-owned commands survive Copier updates without copying shared recipes.
+-include Makefile.local

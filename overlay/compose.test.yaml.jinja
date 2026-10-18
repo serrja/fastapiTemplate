@@ -28,5 +28,5 @@ services:
       - /bin/sh
       - -ec
       - >-
-        python -m pytest tests/foundation/database_integration.py -p no:cacheprovider
-        && python -m pytest --cov --cov-report=term-missing --cov-report=json --cov-report=xml -p no:cacheprovider
+        python -m coverage run -m pytest tests/foundation/database_integration.py tests/*_integration.py -p no:cacheprovider
+        && python -m pytest --cov --cov-append --cov-report=term-missing --cov-report=json --cov-report=xml -p no:cacheprovider

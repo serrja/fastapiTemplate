@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 build-backend = "hatchling.build"
 {% endif %}{% endblock %}
 {% block project %}[project]
-name = "{{ distributionName | default(packageName | lower) }}"
+name = "{{ packageName | lower }}"
 version = "0.1.0"
 description = "{{ projectDescription | default(projectName ~ ' ' ~ profile ~ ' foundation') }}"
 readme = "README.md"
