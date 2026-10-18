@@ -14,5 +14,8 @@ dist/
 .serena/
 .local/
 backups/
-.coverage*
+.coverage
+.coverage.*
 coverage/
+
+/core.[0-9]*

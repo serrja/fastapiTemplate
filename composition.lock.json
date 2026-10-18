@@ -4,7 +4,7 @@
   "copierConfigurationSha256": "7568c277dfd8d6398af8747d610f4d7167ef1ae13f2900f33291e64874bde23c",
   "files": {
     ".copier-answers.yml.jinja": "4714ab805f141292e2d772077378c94470e1283f6a2b60e5791cd03122513726",
-    ".dockerignore": "0fa6b091dc4866e2fe6a7d384d823ddbaa6baf7636833287e177bf8932829f07",
+    ".dockerignore": "309a17f3eda92ed180adf6c38cec74d8bba334cf025074bd4c808820d4b30460",
     ".editorconfig": "29f683ebf0458a834f255c97a6193962c542de802079b42800fd592723f7ff3c",
     ".github/ISSUE_TEMPLATE/bug.yml": "78feef33d31062d539661a94b267c683934e5c497cda7ee075c2f2f00a49a4b6",
     ".github/ISSUE_TEMPLATE/feature.yml": "0b80a1e2b30ffc501f321a38b0c60396f309eb73e8aeff0c3a45710009dd23bd",
@@ -13,9 +13,9 @@
     ".github/actions/deployment-tools/action.yml": "03ae586ffbcc202cfb6c70b41e6281fd49f8dc44f20098bf82412af6bddd4d92",
     ".github/workflows/ci.yml.jinja": "6e2af400fc994bb70cda623c0456753f8a6b1ca09435a9ef5a733a1884ed599a",
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
-    ".gitignore": "56a9b9094b284a7ea7baaf4bd5777598f51e285dd5704bee1d8f3858a8b66c3a",
+    ".gitignore": "0af4ddb26b7442bd451f080721d8c47379dd580326e8a15a71a94647c6a81f4c",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "40b32f67f53b64128afd53f30c1ffb896c52c52ae0c3b8d791d0d0634214735c",
+    ".template-source.json": "112689a4976df928c2efdedc50067d15bd1dd4808de002303ed692b43b396a9b",
     "AGENTS.md.jinja": "88180e189e4151d9764228f6e039cb916a1b46ee543ff3511372ed1cc19bb865",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "9607a7adaab4aeb796c41453de6a78e9c63f5cf37f7c998ccfcfc4c28ab3e474",
@@ -24,7 +24,7 @@
     "README.md.jinja": "75c99612f64b975306698de64e367f1331f2f537c1e3df4d097fb2258bd8d294",
     "SERVICE.md.jinja": "d37c2c45ad049250c4c4426d22fb6df43ffe9b186d90e7b4d7d278d03938a92c",
     "_base/Makefile.jinja": "3483f8b4dab47a7617b682b1fca9c9b6ce42f65c0300c12203a15dc471e8e694",
-    "_base/pyproject.toml.jinja": "98ca79451dfe94591d0bce44540325455fe869f029119ea69dc38d332b1360dd",
+    "_base/pyproject.toml.jinja": "c3d02af8a8353c799bd9954fa6056c645c5cecc9d6418c87f3b4f0587eb40d46",
     "alembic.ini.jinja": "13bf4b22b9ad554fcd1fa572da8978ed246146442a4f2e233a2fdf2bc9fd8c46",
     "compose.test.yaml.jinja": "489726a8f1e0cc1a9d49e6523d36a23015109f18c3851f58d6871ca682d1ec46",
     "deploy/chart/.helmignore": "00fb8bed70d5e8b5edd2b2e50e24251f9a2d1f6b5a331ae96d30ad5c0a3d7c9d",
@@ -57,7 +57,7 @@
     "tests/foundation/test_package.py.jinja": "0deb617f92fd0d99648913a29b23d536893153076350ba862f562864549b7dd0",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "b6decf69d82d2da64235a3c3793fcbf6e7ad3f00e708155ad39f25cf1a479962",
+  "overlayContentSha256": "08b096168d73ed33c6ace96621726c14ea367279e8dd0b0970d7d8e0cc79154b",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -113,8 +113,8 @@
     "tests/foundation/test_package.py.jinja": "parent",
     "tests/test_http.py.jinja": "overlay"
   },
-  "parentContentSha256": "9b73f55fa1d6832af293b6a0b18fc5781e77720127afa4208f7daa390d747f20",
+  "parentContentSha256": "c8080f9e72ffd609f59ad24543e834a30f7cf0e6135fd1b396d52a89f81da748",
   "schema": 1,
-  "sourceContentSha256": "7af7e6a911d211d2d70212d53957666651e31907837a4a0e878b898ab752779b",
+  "sourceContentSha256": "6acfdb03d5c92c26e234b69268b6be2ad9cb525453e8ef348ef4edce2ad29026",
   "templateVersion": "0.2.0.dev0"
 }

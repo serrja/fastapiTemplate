@@ -10,7 +10,8 @@
 .codex/**
 .serena
 .serena/**
-.coverage*
+.coverage
+.coverage.*
 coverage
 .local
 backups
@@ -24,3 +25,5 @@ __pycache__
 .pytest_cache
 dist
 *.egg-info
+
+/core.[0-9]*

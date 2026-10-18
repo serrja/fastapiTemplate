@@ -5,5 +5,12 @@ __pycache__/
 .ruff_cache/
 .venv/
 dist/
-.coverage*
+.coverage
+.coverage.*
 coverage/
+
+.aws
+.serena/
+.local/
+backups/
+/core.[0-9]*
