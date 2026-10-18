@@ -13,9 +13,9 @@
     ".github/actions/deployment-tools/action.yml": "03ae586ffbcc202cfb6c70b41e6281fd49f8dc44f20098bf82412af6bddd4d92",
     ".github/workflows/ci.yml.jinja": "6e2af400fc994bb70cda623c0456753f8a6b1ca09435a9ef5a733a1884ed599a",
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
-    ".gitignore": "479a470c07b3eb215c36ec04762e7238bfd71e1b6845428eb4e58c4734b3d93d",
+    ".gitignore": "56a9b9094b284a7ea7baaf4bd5777598f51e285dd5704bee1d8f3858a8b66c3a",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "146604f163b142d339617c68cba3248c8fb3aa4680f22ad51c5f1478766c6473",
+    ".template-source.json": "5365c20a403187863a11f0aff31718dae8520899d0683640caef273ab10d4b75",
     "AGENTS.md.jinja": "88180e189e4151d9764228f6e039cb916a1b46ee543ff3511372ed1cc19bb865",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "4c3256ace69c35560011f74b10573324cbab8be0ccb061f70376aaf115d026f0",
@@ -24,7 +24,7 @@
     "README.md.jinja": "75c99612f64b975306698de64e367f1331f2f537c1e3df4d097fb2258bd8d294",
     "SERVICE.md.jinja": "d37c2c45ad049250c4c4426d22fb6df43ffe9b186d90e7b4d7d278d03938a92c",
     "_base/Makefile.jinja": "0caa35163e28ab275b322d5451e8c9ecb06ce6c5f82f543f43d9a39ede0c97ca",
-    "_base/pyproject.toml.jinja": "846ea21192f2a58f1cb391be3022f1f65982a71bcde62311048be0a70aa92e12",
+    "_base/pyproject.toml.jinja": "71e7e74d9eef52cfe375a01c189b401c1d0a7923363fde631af2d74a37be2a3d",
     "alembic.ini.jinja": "13bf4b22b9ad554fcd1fa572da8978ed246146442a4f2e233a2fdf2bc9fd8c46",
     "compose.test.yaml.jinja": "99327ed88b64dafc28448b47b114705e7e2d6582778c23797a6b97f85c1ac418",
     "deploy/chart/.helmignore": "00fb8bed70d5e8b5edd2b2e50e24251f9a2d1f6b5a331ae96d30ad5c0a3d7c9d",
@@ -113,8 +113,8 @@
     "tests/foundation/test_package.py.jinja": "parent",
     "tests/test_http.py.jinja": "overlay"
   },
-  "parentContentSha256": "693c0ebb47ce0963c41cf1c6e7b1eca11d192a25e75dfef48df6ce5a080daf91",
+  "parentContentSha256": "b9439240d09f2a617ccfdb7a0330bf9d598990b9bb661fa1b37a156a72456cbe",
   "schema": 1,
-  "sourceContentSha256": "e7f82cf2795dafd2e2e7988d4f81a8a9676456d0db8e5daa396345597c658936",
+  "sourceContentSha256": "908ef104bd6e3e817b6b4c80b3b49c1151ff4407b18e3625c29045102e10fdf4",
   "templateVersion": "0.2.0.dev0"
 }

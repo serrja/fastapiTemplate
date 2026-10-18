@@ -6,6 +6,13 @@ __pycache__/
 dist/
 *.egg-info/
 .env
+.env.*
+!.env.example
+.aws
+.agents/
+.codex/
+.serena/
 .local/
+backups/
 .coverage*
 coverage/
