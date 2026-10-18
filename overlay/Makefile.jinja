@@ -1,11 +1,11 @@
 {% extends baseMakefileTemplate | default("template/_base/Makefile.jinja") %}
 {% block buildCommand %}{% if withDocker %}build: ## Export the wheel and sdist from the canonical container build.
-	docker buildx build --target artifacts --output type=local,dest=dist .
+	docker buildx build $(DOCKER_BUILD_ARGS) --target artifacts --output type=local,dest=dist .
 
 .PHONY: image
 image: ## Build and load the immutable runtime candidate locally.
 	@mkdir -p dist
-	docker buildx build --target runtime --load --tag {{ packageName }}:candidate --metadata-file dist/image-build.json .
+	docker buildx build $(DOCKER_BUILD_ARGS) --target runtime --load --tag {{ packageName }}:candidate --metadata-file dist/image-build.json .
 {% else %}{{ super() }}{% endif %}{% endblock %}
 {% block extraCommands %}
 .PHONY: run
@@ -22,7 +22,7 @@ test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a d
 .PHONY: test-image
 test-image: ## Run installed-wheel tests in a disposable container and, when enabled, PostgreSQL.
 	@mkdir -p coverage
-	docker buildx build --target test --load --tag {{ packageName }}:test .
+	docker buildx build $(DOCKER_BUILD_ARGS) --target test --load --tag {{ packageName }}:test .
 {% if withPersistence %}	@set -eu; project="{{ packageName }}test$$(python3 -c 'import uuid; print(uuid.uuid4().hex[:12])')"; \
 	trap 'docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" down --volumes --remove-orphans' EXIT HUP INT TERM; \
 	TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up --abort-on-container-exit --exit-code-from tests tests

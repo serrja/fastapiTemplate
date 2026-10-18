@@ -15,11 +15,11 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "56a9b9094b284a7ea7baaf4bd5777598f51e285dd5704bee1d8f3858a8b66c3a",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "5365c20a403187863a11f0aff31718dae8520899d0683640caef273ab10d4b75",
+    ".template-source.json": "c5a4a0be3eb41ca5256e1b83b0fdd60db5e484a45ec042479fcb0b69f67728de",
     "AGENTS.md.jinja": "88180e189e4151d9764228f6e039cb916a1b46ee543ff3511372ed1cc19bb865",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "4c3256ace69c35560011f74b10573324cbab8be0ccb061f70376aaf115d026f0",
-    "Makefile.jinja": "2d33ce560a0c47957bdf7ef4cefba03ba3e8f064ff441b7f8a4cc74963f0c059",
+    "Makefile.jinja": "beacd1bab903b1f1f5d632e25ec40f150a61aece81c52073e4ef3cd4bce09f6d",
     "PROJECT.md.jinja": "d5bc786f311f73282d02270a5b97682a10559dc590c37d3dadec29975c84ee90",
     "README.md.jinja": "75c99612f64b975306698de64e367f1331f2f537c1e3df4d097fb2258bd8d294",
     "SERVICE.md.jinja": "d37c2c45ad049250c4c4426d22fb6df43ffe9b186d90e7b4d7d278d03938a92c",
@@ -57,7 +57,7 @@
     "tests/foundation/test_package.py.jinja": "8a6f9fd673d6a588014d03c45ec0d2d4f60bda9a91d4adb7fb56c486033ef26e",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "ebb5b5bc060fa1a793e80eb883b15735bf786544763a2e175cdeca1c3525b30b",
+  "overlayContentSha256": "16248240a5013fc27d4b3468e86ba8413b63217ad26e63b199ae8b163236ef39",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -115,6 +115,6 @@
   },
   "parentContentSha256": "b9439240d09f2a617ccfdb7a0330bf9d598990b9bb661fa1b37a156a72456cbe",
   "schema": 1,
-  "sourceContentSha256": "908ef104bd6e3e817b6b4c80b3b49c1151ff4407b18e3625c29045102e10fdf4",
+  "sourceContentSha256": "a30f9bca87661adf57edc034ddb9b4a122fc345adad7832462a80f53f5182e44",
   "templateVersion": "0.2.0.dev0"
 }
