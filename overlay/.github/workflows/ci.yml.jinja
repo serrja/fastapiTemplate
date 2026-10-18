@@ -75,8 +75,17 @@ jobs:
           KUBECONFIG: {% raw %}${{ runner.temp }}/foundation-kubeconfig{% endraw %}
         run: |
           set -euo pipefail
+          cleanup() {
+            result=$?
+            set +e
+            kubectl --context kind-{{ packageName }}-local -n foundation get pods,jobs
+            kubectl --context kind-{{ packageName }}-local -n foundation get events --sort-by=.metadata.creationTimestamp
+            kubectl --context kind-{{ packageName }}-local -n foundation logs -l app=foundation-database --tail=60
+            make undeploy-local
+            exit "$result"
+          }
+          trap cleanup EXIT
           make deploy-local KUBECONFIG_LOCAL="$KUBECONFIG"
-          trap 'make undeploy-local' EXIT
           kubectl --context kind-{{ packageName }}-local -n foundation rollout status deployment/{{ packageName }} --timeout=120s
           kubectl --context kind-{{ packageName }}-local -n foundation port-forward service/{{ packageName }} 18080:8000 > "$RUNNER_TEMP/port-forward.log" 2>&1 &
           curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:18080/health/ready

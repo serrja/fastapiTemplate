@@ -47,11 +47,10 @@ deploy-local: image ## Create a disposable Kind contour; no external kubeconfig 
 	$(KIND) create cluster --name {{ packageName }}-local --image $(KIND_IMAGE) --kubeconfig $(KUBECONFIG_LOCAL) --wait 180s
 	$(KIND) load docker-image {{ packageName }}:candidate --name {{ packageName }}-local
 	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local create namespace foundation
-{% if withPersistence %}	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation apply -f deploy/local/postgres.yaml
-	docker pull postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+{% if withPersistence %}	docker pull postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
 	docker tag postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3 foundation-postgres:local-2d2b8998d310
 	$(KIND) load docker-image foundation-postgres:local-2d2b8998d310 --name {{ packageName }}-local
-	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation set image deployment/foundation-database database=foundation-postgres:local-2d2b8998d310
+	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation apply -f deploy/local/postgres.yaml
 	$(KUBECTL) --kubeconfig $(KUBECONFIG_LOCAL) --context kind-{{ packageName }}-local -n foundation rollout status deployment/foundation-database --timeout=120s
 {% endif %}	$(HELM) upgrade --install {{ packageName }} deploy/chart --kubeconfig $(KUBECONFIG_LOCAL) --kube-context kind-{{ packageName }}-local --namespace foundation --wait --timeout 120s --rollback-on-failure --values deploy/values.yaml --set image.repository={{ packageName }} --set image.tag=candidate --set localDevelopment=true{% if withPersistence %} --set database.secretName=foundation-database --set migration.enabled=true{% endif %}
 

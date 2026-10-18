@@ -131,8 +131,17 @@ jobs:
           KUBECONFIG: ${{ runner.temp }}/foundation-kubeconfig
         run: |
           set -euo pipefail
+          cleanup() {
+            result=$?
+            set +e
+            kubectl --context kind-exampleapi-local -n foundation get pods,jobs
+            kubectl --context kind-exampleapi-local -n foundation get events --sort-by=.metadata.creationTimestamp
+            kubectl --context kind-exampleapi-local -n foundation logs -l app=foundation-database --tail=60
+            make undeploy-local
+            exit "$result"
+          }
+          trap cleanup EXIT
           make deploy-local KUBECONFIG_LOCAL="$KUBECONFIG"
-          trap 'make undeploy-local' EXIT
           kubectl --context kind-exampleapi-local -n foundation port-forward service/exampleapi 18080:8000 > "$RUNNER_TEMP/port-forward.log" 2>&1 &
           curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:18080/health/ready
           helm upgrade exampleapi deploy/chart --kube-context kind-exampleapi-local --namespace foundation --reuse-values --set replicaCount=3 --wait --timeout 120s --rollback-on-failure
