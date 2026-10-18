@@ -40,6 +40,7 @@ jobs:
           name: maintenance-coverage
           path: coverage/
           if-no-files-found: error
+          retention-days: 14
   template:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -160,8 +161,21 @@ jobs:
           name: render-${{ matrix.variant }}
           path: |
             ${{ runner.temp }}/rendered/coverage/
-            ${{ runner.temp }}/rendered/dist/
+            ${{ runner.temp }}/rendered/dist/*
+            !${{ runner.temp }}/rendered/dist/runtime-image.docker.tar.gz
           if-no-files-found: error
+          retention-days: 14
+      - name: Short-lived tested runtime candidate
+        if: matrix.docker
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: runtime-${{ matrix.variant }}
+          path: |
+            ${{ runner.temp }}/rendered/dist/runtime-image.docker.tar.gz
+            ${{ runner.temp }}/rendered/dist/runtime-image.json
+            ${{ runner.temp }}/rendered/dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 1
   required:
     if: always()
     needs: [source, template]

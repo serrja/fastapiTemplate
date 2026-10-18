@@ -54,7 +54,7 @@ The chart is authored only in `overlay/deploy/chart`, propagated by verified com
 
 BuildKit performs a normal cached solve using the actual Dockerfile, context, file modes, lock, base digests and arguments. Download mounts and image layer cache are distinct. Tests always rerun. Source, README metadata, lock and base changes invalidate their dependent layers; test-only and chart-only changes can reuse the runtime. There is no custom build resolver.
 
-CI uses repository-scoped GHA layer cache with separate variant, target, platform and PR/main scopes. It exports the tested image archive, its **local image identity**, wheels, chart and checksums together with coverage. A Docker archive/local image ID is not a registry manifest digest. No registry is configured here; publication, release and external deployment require separately selected targets and authorization. Private caches must have access no wider than their source dependencies.
+CI uses repository-scoped GHA layer cache with separate variant, target, platform and PR/main scopes. Small distribution and coverage evidence is retained for 14 days. Separate `runtime-*` artifacts hold the tested Docker archive, its local image identity and checksums for one day. Preserve an approved candidate in authorized release storage before expiry. A Docker archive/local image ID is not a registry manifest digest. No registry is configured here; publication, release and external deployment require separately selected targets and authorization. Private caches must have access no wider than their source dependencies.
 
 Generated projects may keep their published local commands in `Makefile.local`; Copier updates
 continue to own the shared Makefile. Persistence-enabled `make test` combines a fresh real DB
