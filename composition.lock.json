@@ -15,7 +15,7 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "56a9b9094b284a7ea7baaf4bd5777598f51e285dd5704bee1d8f3858a8b66c3a",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "2bc82e5e63ae697647cfe6838053c69f8347cc3404c7a948d39b63e311357c31",
+    ".template-source.json": "c0e7ec69397f1707373788f1864a3632791920eb2c72b156cc897bb9bea17cc6",
     "AGENTS.md.jinja": "88180e189e4151d9764228f6e039cb916a1b46ee543ff3511372ed1cc19bb865",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "4c3256ace69c35560011f74b10573324cbab8be0ccb061f70376aaf115d026f0",
@@ -47,7 +47,7 @@
     "src/{{ packageName }}/api/health.py.jinja": "3f4d56b949dda993b1af3ed56498c65d99b8bf303835d0fbb07ce90ae021e7ad",
     "src/{{ packageName }}/app.py.jinja": "d44f108904f482c328ef3cb09f87e2ad846bb3bcc2442e006b1243c928dcbd76",
     "src/{{ packageName }}/errors.py.jinja": "cfdfe26ef3d42f93774d712a1f1c9dd164e8ba3da83f04997a480c65c5bbc2b1",
-    "src/{{ packageName }}/persistence.py.jinja": "7e4e069e116638b586d5958618062936cb0be4583ac19514f3efd16e34c0a7b4",
+    "src/{{ packageName }}/persistence.py.jinja": "c7965365d6b6785708fc930ce92fa07f95001008aae9bbfcc5a32efe55c4c9e3",
     "src/{{ packageName }}/py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/{{ packageName }}/resources.py.jinja": "eadd753e14debd0a7429884c1bce6e50e2fa30cef18570fe9c96eebd4530b8e9",
     "src/{{ packageName }}/settings.py.jinja": "f3b26089e9c55ee897da7e9a3ee9a2d7df34d6618e4fc49f1c10bd4cd4d71f3b",
@@ -57,7 +57,7 @@
     "tests/foundation/test_package.py.jinja": "66d0bac5c6d381901f219dd15e53b5c0bc30a2c013a10d764f9c853644ad2992",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "16248240a5013fc27d4b3468e86ba8413b63217ad26e63b199ae8b163236ef39",
+  "overlayContentSha256": "4ca63f11010397c8007d4348af599c8a02ef763d8aebc77fe1997db7f8e67ad9",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -115,6 +115,6 @@
   },
   "parentContentSha256": "5546e39d856f0a8d5310588ee4c1fe74f2852091f1991573c8f8e172eee5b8c9",
   "schema": 1,
-  "sourceContentSha256": "a764026c27c3824f9c93624204e790f658b36226e6f0101623430fbdf601bb10",
+  "sourceContentSha256": "e3d9bf88184e7440b581d98f2c161e8cb7b5b55c47b0f98cc9e75a5a32bec5b1",
   "templateVersion": "0.2.0.dev0"
 }

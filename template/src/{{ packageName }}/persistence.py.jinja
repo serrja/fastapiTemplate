@@ -24,7 +24,7 @@ def create_engine(settings: ServiceSettings) -> AsyncEngine:
         return create_async_engine(
             settings.database_url.get_secret_value(), pool_pre_ping=True
         )
-    except (SQLAlchemyError, ValueError):
+    except {% if pythonMinimum | default('3.12') in ('3.12', '3.13') %}(SQLAlchemyError, ValueError){% else %}SQLAlchemyError, ValueError{% endif %}:
         raise ValueError("Invalid DATABASE_URL") from None
 
 
