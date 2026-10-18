@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 build-backend = "hatchling.build"
 {% endif %}{% endblock %}
 {% block project %}[project]
-name = "{{ packageName | lower }}"
+name = "{{ distributionName | default(packageName | lower) }}"
 version = "0.1.0"
 description = "{{ projectDescription | default(projectName ~ ' ' ~ profile ~ ' foundation') }}"
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [{% block runtimeDependencies %}{% if profile == 'cli' %}"typer>=
 {{ projectName }} = "{{ packageName }}.cli:app"
 {% endif %}{% endblock %}
 {% block development %}[dependency-groups]
-dev = ["mypy>=2.3,<3", "ruff>=0.16,<1", "packaging>=25,<27"{% if profile == 'native' %}, "scikit-build-core>=0.11,<1", "pybind11>=3,<4"{% else %}, "hatchling>=1.27,<2"{% endif %}{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% if profile == 'service' %}, "httpx>=0.28,<1"{% endif %}{% endif %}{% block extraDevelopmentDependencies %}{% endblock %}]
+dev = ["mypy>=2.3,<3", "ruff==0.16.4", "packaging>=25,<27"{% if profile == 'native' %}, "scikit-build-core>=0.11,<1", "pybind11>=3,<4"{% else %}, "hatchling>=1.27,<2"{% endif %}{% if withTesting | default(true) %}, "pytest>=9,<10", "pytest-cov>=7,<8"{% if profile == 'service' %}, "httpx>=0.28,<1"{% endif %}{% endif %}{% block extraDevelopmentDependencies %}{% endblock %}]
 {% endblock %}
 {% block buildTarget %}{% if profile != 'native' %}[tool.hatch.build]
 exclude = [".aws", ".aws/**", ".agents", ".agents/**", ".codex", ".codex/**", ".serena", ".serena/**", ".local", ".local/**", "backups", "backups/**", ".env", ".env.*", "!.env.example"]

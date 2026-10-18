@@ -8,7 +8,7 @@ from importlib.metadata import distribution
 
 def test_installed_distribution_and_public_import() -> None:
     package = importlib.import_module("{{ packageName }}")
-    installed = distribution("{{ packageName }}")
-    assert installed.metadata["Name"] == "{{ packageName }}"
+    installed = distribution("{{ distributionName | default(packageName) }}")
+    assert installed.metadata["Name"] == "{{ distributionName | default(packageName) }}"
     assert installed.version
     assert package.__name__ == "{{ packageName }}"
