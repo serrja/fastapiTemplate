@@ -16,10 +16,10 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "732f5ce68b4b13ef900931ca4a47ef00acffa7cdb7b699feb0e8a8d7ac719d82",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "045890030ca9fd86cc99cee0465870aaba365353aef761a2db0f17628871c541",
+    ".template-source.json": "a56b3c465c7a493f25fd368b3ed3c95895b9572e7ec57ac0b2b5ac6a05eb691f",
     "AGENTS.md.jinja": "c22b27fcab3d4a887f8adbf26cd6b9c45c2d17fcc7ab1cd174573bc9e465091e",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
-    "Dockerfile.jinja": "ea4681b78c6349dc5014b6225defdee49bc75d00bf1d14d0143be4c23f018c99",
+    "Dockerfile.jinja": "0b9f7db2267497249521076faa1405823c0353aa592a72bb463b2d7974d05c76",
     "Dockerfile.quality": "d7c50a1fff554d6eb9e8d13837725ce038dd596c5374c006d1fff2c6bd3b8df3",
     "Dockerfile.quality.dockerignore": "b33c067b012b6ac670c6876493bb0ab63f68e4fb7c0722c35197e0e9161897d5",
     "LICENSE.jinja": "6cf866f34ac5be3c44e2749f192b6c067e3b4fe791dafe781a44d564d7a96986",
@@ -36,7 +36,8 @@
     "app_logging.json.jinja": "cf3966f4123bca56aa65ed4a26e3bf7b305874bb71bc4eb5aa1afcd3066b68ee",
     "compose.test.yaml.jinja": "86c2ed9ad7660811b122bb3539b332bf28c1f5a5e65d5d6fd16740080a6df7cd",
     "deploy/chart/.helmignore": "00fb8bed70d5e8b5edd2b2e50e24251f9a2d1f6b5a331ae96d30ad5c0a3d7c9d",
-    "deploy/chart/Chart.yaml": "09f9b646dd5743f2c47158f88abaec3fad03f93adea3af36d013595eba849c7a",
+    "deploy/chart/Chart.yaml": "66b1dbac69a95b0e9d5c09295725de38901fc5e9e9ad7bfc4d6df9a88bca9880",
+    "deploy/chart/LICENSE": "e7813a4e8912aca452d2166e5a1ef6b78fcb6d0855e309cf5a0c35591284c8b2",
     "deploy/chart/templates/_helpers.tpl": "d3806603afaacb5efc8aac148f57ec7800b242b941e35d4fd9cef577766a3959",
     "deploy/chart/templates/deployment.yaml": "33ab2dbb30124937fafb59f328dbec7af07e4916df828aeeab576f5f8c30df43",
     "deploy/chart/templates/migration.yaml": "a8cba4bdcbd1b9ded9cf456d14ee61de2fced6167869b8d481752ff594643164",
@@ -72,7 +73,7 @@
     "tests/foundation/test_package.py.jinja": "0deb617f92fd0d99648913a29b23d536893153076350ba862f562864549b7dd0",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "e7fdad92e4c69ccfc4a2564b5b062920bdd214a4a29d7646d6c6cfe62bb200ab",
+  "overlayContentSha256": "e7f49250a8b7044e1362e112b40a13130b258f3a2a55917e00f3ff8f1b03f45e",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -108,6 +109,7 @@
     "compose.test.yaml.jinja": "overlay",
     "deploy/chart/.helmignore": "overlay",
     "deploy/chart/Chart.yaml": "overlay",
+    "deploy/chart/LICENSE": "overlay",
     "deploy/chart/templates/_helpers.tpl": "overlay",
     "deploy/chart/templates/deployment.yaml": "overlay",
     "deploy/chart/templates/migration.yaml": "overlay",
@@ -143,8 +145,8 @@
     "tests/foundation/test_package.py.jinja": "parent",
     "tests/test_http.py.jinja": "overlay"
   },
-  "parentContentSha256": "8d0c8d72c7608b146796b85fcdc268c7fa43c7401b6a589c2516f733429d20a7",
+  "parentContentSha256": "6bc1f02c39cc89335e11da128404d38168dbcb21d554606a190db02294200a9b",
   "schema": 1,
-  "sourceContentSha256": "7c9d9935637602e10e3bab3271955503618800833b2e73e5ddf923792f00783b",
+  "sourceContentSha256": "298f939cfa5ed05e2b8c474b9cb159f9282a0b96f4fd9ddfca83ff2af3418459",
   "templateVersion": "0.3.0.dev0"
 }

@@ -53,9 +53,9 @@ CMD ["python", "-m", "pytest", "--cov", "--cov-report=term-missing", "--cov-repo
 
 {% endif %}FROM base AS runtime
 COPY --from=installed /app/.venv /app/.venv
-COPY --from=dependencies /app/LICENSES /licenses/scaffold
-COPY --from=dependencies /app/THIRD_PARTY_NOTICES.md /licenses/THIRD_PARTY_NOTICES.md
-{% if licensePolicy | default('unlicensed') == 'MIT' %}COPY --from=dependencies /app/LICENSE /licenses/LICENSE
+COPY --chmod=u=rwX,go=rX --from=dependencies /app/LICENSES /licenses/scaffold
+COPY --chmod=0444 --from=dependencies /app/THIRD_PARTY_NOTICES.md /licenses/THIRD_PARTY_NOTICES.md
+{% if licensePolicy | default('unlicensed') == 'MIT' %}COPY --chmod=0444 --from=dependencies /app/LICENSE /licenses/LICENSE
 LABEL org.opencontainers.image.licenses="MIT"
 {% endif %}COPY --chmod=u=rw,go=r app_logging.json ./app_logging.json
 {% if withPersistence %}COPY --chmod=u=rwX,go=rX migrations ./migrations
