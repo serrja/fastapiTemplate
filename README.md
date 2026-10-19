@@ -69,3 +69,6 @@ owner tools and historical migrations while excluding `src/`; the suite asserts 
 origin so a checkout cannot silently shadow the artifact.
 
 The primary check/build path uses Git, Make and Docker. `coverage` reports a fresh result without rerunning tests. Below 100% warns; assertions, types, configuration, builds and missing/corrupt/stale reports fail. Parent refresh is an explicit source-maintenance operation using the locked composer; it is not a runtime dependency.
+
+Read [HTTP observability](docs/observability.md) for metrics, safe logging, registry ownership
+and the supported worker model.

@@ -10,10 +10,12 @@ from contextlib import (
 {% if withPersistence %}    AsyncExitStack,
 {% endif %}    asynccontextmanager,
 )
+from time import perf_counter
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
 
+from {{ packageName }} import observability
 from {{ packageName }}.api.health import router as health_router
 {% block packageImports %}from {{ packageName }}.errors import configure_error_handlers
 {% if withPersistence %}from {{ packageName }}.persistence import create_engine, session_factory
@@ -51,10 +53,18 @@ def create_lifespan(
     return lifespan
 
 
-def create_app(settings: ServiceSettings | None = None) -> FastAPI:
+def create_app(
+    settings: ServiceSettings | None = None,
+    *,
+    telemetry: observability.ObservabilitySettings | None = None,
+) -> FastAPI:
     """Compose HTTP behavior without import-time settings or network effects."""
     resolved_settings = settings if settings is not None else ServiceSettings()
+    resolved_telemetry = (
+        telemetry if telemetry is not None else observability.ObservabilitySettings()
+    )
     LOGGER.setLevel(resolved_settings.log_level)
+    http_logger = observability.request_logger(resolved_settings.log_level)
     application = FastAPI(
         title="{{ projectName }}",
         lifespan=create_lifespan(resolved_settings),
@@ -68,12 +78,31 @@ def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     async def correlation_id(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        incoming = request.headers.get("X-Request-ID", "")
+        incoming_ids = request.headers.getlist("X-Request-ID")
+        incoming = incoming_ids[0] if len(incoming_ids) == 1 else ""
         request_id = incoming if REQUEST_ID.fullmatch(incoming) else str(uuid4())
         request.state.request_id = request_id
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        return response
+        started = perf_counter()
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            response.headers["X-Request-ID"] = request_id
+            return response
+        finally:
+            route = request.scope.get("route")
+            http_logger.info(
+                "http_request",
+                extra={
+                    "environment": resolved_telemetry.environment,
+                    "request_id": request_id,
+                    "operation": getattr(route, "path", "none"),
+                    "status": status,
+                    "duration_seconds": perf_counter() - started,
+                },
+            )
 
     application.include_router(health_router)
-{% block configureApplication %}{% endblock %}    return application
+{% block configureApplication %}{% endblock %}    if resolved_telemetry.metrics_enabled:
+        observability.instrument(application)
+    return application

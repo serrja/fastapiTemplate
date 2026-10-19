@@ -1,4 +1,4 @@
-templateVersion = "0.2.0.dev0"
+templateVersion = "0.3.0.dev0"
 answersSchema = 1
 snapshot = "_sources/pythonTemplate"
 overlay = "overlay"
