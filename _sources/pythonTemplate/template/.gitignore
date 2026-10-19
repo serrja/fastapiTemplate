@@ -6,3 +6,17 @@ __pycache__/
 dist/
 *.egg-info/
 .env
+.env.*
+!.env.example
+.aws
+.agents/
+.codex/
+.serena/
+.local/
+backups/
+.coverage
+.coverage.*
+coverage/
+
+/core.[0-9]*
+.vscode/

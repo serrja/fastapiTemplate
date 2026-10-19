@@ -1,0 +1,25 @@
+replicaCount: 2
+image:
+  repository: ""
+  digest: ""
+  tag: ""
+localDevelopment: false
+imagePullSecrets: []
+environment: {}
+database:
+  enabled: false
+  secretName: ""
+  secretKey: DATABASE_URL
+migration:
+  enabled: false
+  command: [python, -m, alembic, upgrade, head]
+  activeDeadlineSeconds: 120
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi
+service:
+  port: 8000

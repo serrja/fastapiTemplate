@@ -1,7 +1,7 @@
 # Contributing to fastApiTemplate
 
-The shared naming, review, and version rules are owned by the existing `serrja/projectTemplates` repository (`docs/naming.md`, `docs/contributing.md`, `docs/versioning.md`, and `docs/releaseGuide.md`). This repository owns only the FastAPI overlay and its derivative source.
+Read [AGENTS.md](AGENTS.md), [README.md](README.md) and `composition.toml`. The Python base owns shared Python tooling and composition; this repository owns the FastAPI overlay and its deployment recipe.
 
-Read [AGENTS.md](AGENTS.md), [README.md](README.md), and `composition.toml`. Edit `overlay/`, refresh a reviewed Python-base snapshot with the command in the README, and inspect `composition.lock.json` and the derived `template/` diff. Render both persistence choices into disposable directories; run their locked Ruff, strict mypy, wheel, installed-wheel startup, and bounded health checks. Record empty test collection as `notConfigured`. A real database check uses a disposable database; a local Docker failure is not a passing container check.
+Run `make install`, `make compose`, `make check` and `make chart-check` with the pinned Helm toolchain. Render both persistence choices; run their locked checks and installed-wheel container suites. Use disposable PostgreSQL for transaction/readiness/migration checks. Test chart acceptance in a separate Kind context. Failed, skipped and unavailable checks remain explicit.
 
-Use a focused `type/shortCamelCaseIntent` branch and `type(scope): intent` PR title when publication is authorized. State the owner, compatibility impact, actual checks, downstream update order, and rollback. No local edit implies permission to commit, publish, tag, or deploy.
+Review generated provenance and owner-file preservation after updates. Record statement and branch counts, missing paths, image identity, artifact checksums and any blocked delivery target in the PR. A build does not authorize publication, release or production deployment.

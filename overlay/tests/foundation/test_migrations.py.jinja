@@ -1,0 +1,47 @@
+"""Inspect empty, branched and non-hex revision sets using public Alembic APIs."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine
+
+from {{ packageName }}.migration_status import MigrationStatus, read_heads
+
+
+def test_empty_baseline_and_multiple_non_hex_heads(tmp_path: Path) -> None:
+    versions = tmp_path / "versions"
+    versions.mkdir()
+    config = Config()
+    config.set_main_option("script_location", str(tmp_path))
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            empty = read_heads(config, connection)
+            assert empty.model_dump(by_alias=True) == {
+                "expectedHeads": [],
+                "currentHeads": [],
+            }
+            revisions = ["20260903_0003", "feature_branch"]
+            for revision in revisions:
+                (versions / f"{revision}.py").write_text(
+                    f"revision = {revision!r}\ndown_revision = None\n"
+                )
+            pending = read_heads(config, connection)
+            assert pending.expected_heads == revisions
+            assert pending.current_heads == []
+            scripts = ScriptDirectory.from_config(config)
+            MigrationContext.configure(connection).stamp(scripts, revisions)
+            applied = read_heads(config, connection)
+            assert applied.current_heads == applied.expected_heads == revisions
+            assert (
+                MigrationStatus.model_validate_json(
+                    applied.model_dump_json(by_alias=True)
+                )
+                == applied
+            )
+    finally:
+        engine.dispose()

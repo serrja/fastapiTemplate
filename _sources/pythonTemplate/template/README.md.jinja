@@ -1,6 +1,6 @@
 # {{ projectName }}
 
-{% if profile == 'cli' %}A typed Python command-line starting point. Add commands when the project's task is defined.{% elif profile == 'library' %}A typed Python library starting point. Define its public API before publishing.{% elif profile == 'service' %}A FastAPI service foundation with liveness/readiness and no product API.{% else %}A C++20 extension foundation with a private pybind11 module and Python package.{% endif %}
+{% if profile == 'library' %}A typed Python library starting point. Define its public API before publishing.{% elif profile == 'service' %}A FastAPI service foundation with liveness/readiness and no product API.{% else %}A C++20 extension foundation with a private pybind11 module and Python package.{% endif %}
 
 ## 🚀 Quick start
 
@@ -9,7 +9,7 @@ Requires Python 3.12+ and `uv`.{% if profile == 'native' %} Also requires a C++2
 ```bash
 uv lock
 uv sync --locked
-{% if profile == 'cli' %}uv run {{ projectName }} --help{% elif profile == 'service' %}uv run uvicorn {{ packageName }}.app:app --host 127.0.0.1 --port 8000{% elif profile == 'native' %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% else %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% endif %}
+{% if profile == 'service' %}uv run uvicorn {{ packageName }}.app:app --host 127.0.0.1 --port 8000{% elif profile == 'native' %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% else %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% endif %}
 ```
 
 ## 🧭 Architecture
@@ -22,14 +22,14 @@ uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 uv run --locked mypy
-uv build
+make build
 ```
 
 ## 🧪 Testing
 
-No subject tests are included yet. `uv run --locked pytest` returns exit code 5 until tests are added; CI marks this stage `NOT_CONFIGURED`. Add tests for real behavior before claiming coverage.
+{% if withTesting | default(true) %}Run `make check` for locked lint, types, meaningful foundation tests, and whole-source Python statement/branch coverage reports (percentages are advisory). JSON/XML reports are written under `coverage/`. Keep application tests alongside the managed `tests/foundation/` suite. A library or empty native adapter has no generated domain behavior; import checks do not prove native algorithms. Database integration requires disposable PostgreSQL and is separate from no-network checks.{% else %}Testing support was explicitly omitted. `make test` fails with an explanation; no test or coverage success is claimed.{% endif %}
 
 ## 📚 Documentation
 
 The [architecture note](docs/architecture.md) records boundaries. The `AGENTS.md` file describes repository work rules. `PROJECT.md`{% if profile == 'service' %} and `SERVICE.md`{% endif %} are project-owned and survive template updates.
-The local [contribution guide](CONTRIBUTING.md) lists the project's commands and review process. No release or production deployment is configured.
+The local [contribution guide](CONTRIBUTING.md) lists the project's commands and review process.{% if withCi | default(true) %} `.github/workflows/release.yml` is a manual release-candidate build for an already authorized tag; it checks commit and version, uploads artifact hashes and notes, and marks publication and deployment `notConfigured` until a registry and target are selected.{% else %} No release or production deployment is configured.{% endif %}

@@ -1,27 +1,39 @@
 # {{ projectName }}
 
-An independent FastAPI foundation. It has process health routes and no product API.
+FastAPI foundation with process health routes. Product operations belong to this application.
 
-## 🚀 Run
+## Run and verify
 
-Requires Python 3.12+ and `uv`. Generate and commit the project-owned `uv.lock` before locked commands.
+The canonical quality/build path uses Git, Make and Docker. Resolve and commit `uv.lock` once after a fresh render; existing checkouts enforce it. A native Python/uv loop is optional.
 
 ```bash
 uv lock
-uv sync --locked
-uv run --locked uvicorn {{ packageName }}.app:createApp --factory --host 127.0.0.1 --port 8000
+make install
+make CONTAINERIZED=1 run
 ```
 
-The application factory reads settings when called. Imports do not open network connections or create database engines. `GET /health/live` reports the process; `GET /health/ready` checks only enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before startup. The template does not create a schema or run migrations on startup.{% else %} This render needs no database URL or credentials.{% endif %}
-
-## 🛠 Development
+`create_app` reads validated settings when called. Imports do not connect to the network. `GET /health/live` checks the process; `/health/ready` checks enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before normal startup. Migrations never run during application startup.{% else %} No DSN or credentials are needed.{% endif %}
 
 ```bash
-uv lock --check
-uv run --locked ruff check .
-uv run --locked ruff format --check .
-uv run --locked mypy
-uv build
+make lint
+make typecheck
+{% if withTesting %}make test-unit
+{% endif %}make build
 ```
 
-No subject tests are included. With test tooling enabled, empty pytest collection is `notConfigured`, not a passing suite. The [architecture](docs/architecture.md), [contribution guide](CONTRIBUTING.md), `PROJECT.md`, and `SERVICE.md` describe ownership. `PROJECT.md` and `SERVICE.md` belong to this application.
+{% if withTesting %}`make test` includes isolated runtime coverage{% if withPersistence %} and a real PostgreSQL transaction/readiness check requiring `TEST_DATABASE_URL` for an explicitly disposable database{% endif %}. Managed tests live in `tests/foundation`; `tests/test_http.py` is an application-owned seed.{% else %}Testing was disabled. Enable it before claiming test coverage or enabling CI.{% endif %}
+
+{% if withDocker %}## Container
+
+`make build` exports wheel/sdist from the Docker `artifacts` target; `make image` loads the runtime candidate. The runtime installs that wheel, uses UID 65532 and one Uvicorn process, and supports a read-only filesystem and bounded SIGTERM shutdown.
+{% if withTesting %}
+`make verify` freshly tests the installed wheel in a container{% if withPersistence %} with a unique disposable Compose PostgreSQL project{% endif %}. It cleans only its own resources. Installed coverage is written to `coverage/installed/`; source reports remain separate. Percentages are advisory; missing/stale reports and real check failures fail. A cached build never substitutes for executing tests.
+{% endif %}
+{% endif %}{% if withKubernetes %}## Kubernetes
+
+`deploy/chart` is the shared FastAPI chart managed by Copier. Set `image.repository` and `image.digest` in the application-owned `deploy/values.yaml`; database values reference an existing Secret rather than containing credentials. `make chart-check chart` validates and packages the chart. Deploy the resulting checksummed artifact and the already tested image; deployment does not rebuild it. Optional migrations run as a Helm pre-install/pre-upgrade Job, never in every application replica. Application rollback does not undo a database migration.
+{% if withDocker %}
+`make deploy-local` creates a dedicated `{{ packageName }}-local` Kind cluster and `.local/kubeconfig`{% if withPersistence %}, including a synthetic disposable PostgreSQL{% endif %}. It loads the local candidate using an explicit development tag override. `make undeploy-local` removes only that cluster. It does not select an external kubeconfig.
+{% endif %}{% endif %}
+
+`PROJECT.md`, `SERVICE.md`, settings, migrations, seed tests and deployment values are application-owned. Review updates and provenance before applying them. See [architecture](docs/architecture.md) and [contribution guide](CONTRIBUTING.md). CI preserves artifacts and coverage; registry publication and release require separate configured targets and authorization.

@@ -1,0 +1,77 @@
+# Disposable acceptance database with synthetic credentials; never production values.
+# make deploy-local loads this tag from the digest-pinned upstream image before apply.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: foundation-database
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql+asyncpg://foundation:synthetic-test-only@foundation-database:5432/foundation
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foundation-database
+spec:
+  selector:
+    app: foundation-database
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foundation-database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: foundation-database
+  template:
+    metadata:
+      labels:
+        app: foundation-database
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: database
+          image: foundation-postgres:local-2d2b8998d310
+          imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - {name: POSTGRES_USER, value: foundation}
+            - {name: POSTGRES_PASSWORD, value: synthetic-test-only}
+            - {name: POSTGRES_DB, value: foundation}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, foundation, -d, foundation]
+            periodSeconds: 2
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 256Mi}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/postgresql/data}
+            - {name: socket, mountPath: /var/run/postgresql}
+            - {name: temporary, mountPath: /tmp}
+      volumes:
+        - name: data
+          emptyDir: {sizeLimit: 512Mi}
+        - name: socket
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+        - name: temporary
+          emptyDir: {medium: Memory, sizeLimit: 64Mi}

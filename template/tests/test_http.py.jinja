@@ -1,0 +1,20 @@
+"""Project-owned smoke test seeded once; shared coverage lives in foundation/."""
+
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+{% if withPersistence %}from pytest import MonkeyPatch
+{% endif %}
+from {{ packageName }}.app import create_app
+
+
+def test_project_health({% if withPersistence %}monkeypatch: MonkeyPatch{% endif %}) -> None:
+{% if withPersistence %}    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://test:test@127.0.0.1:1/test"
+    )
+{% endif %}    application = create_app()
+    assert not hasattr(application.state, "resources")
+    with TestClient(application) as client:
+        assert client.get("/health/live").json() == {"status": "alive"}
+        assert client.get("/missing").status_code == 404
+    assert not hasattr(application.state, "resources")

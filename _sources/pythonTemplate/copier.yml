@@ -10,19 +10,28 @@ _skip_if_exists:
   - "src/*/settings.py"
   - "migrations/**"
 _exclude:
+  - .vscode
+  - .vscode/**
+  - .serena
+  - .serena/**
   - "{% if not (withCi | default(true)) %}.github/workflows{% endif %}"
   - "{% if not (withCi | default(true)) %}.github/workflows/**{% endif %}"
+  - "{% if not (withCi | default(true)) %}.github/actions{% endif %}"
+  - "{% if not (withCi | default(true)) %}.github/actions/**{% endif %}"
   - "{% if not (withTesting | default(true)) %}.pre-commit-config.yaml{% endif %}"
-  - "{% if profile != 'cli' %}src/*/cli.py{% endif %}"
-  - "{% if profile != 'cli' %}src/*/__main__.py{% endif %}"
   - "{% if profile != 'service' %}src/*/app.py{% endif %}"
+  - "{% if profile != 'service' %}src/*/health.py{% endif %}"
+  - "{% if not (withTesting | default(true)) %}tests/**{% endif %}"
+  - "{% if not (withTesting | default(true)) %}tests{% endif %}"
+  - "{% if profile != 'service' %}tests/test_health.py{% endif %}"
+  - "{% if profile != 'native' %}tests/foundation/test_native.py{% endif %}"
+  - "{% if profile != 'service' or not (withPersistence | default(false)) %}tests/foundation/test_legacy_persistence.py{% endif %}"
   - "{% if profile != 'service' %}src/*/settings.py{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}src/*/persistence.py{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}alembic.ini{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations/**{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations{% endif %}"
   - "{% if profile != 'service' %}Dockerfile{% endif %}"
-  - "{% if profile != 'service' %}.dockerignore{% endif %}"
   - "{% if profile != 'service' %}SERVICE.md{% endif %}"
   - "{% if profile != 'native' %}CMakeLists.txt{% endif %}"
   - "{% if profile != 'native' %}native/*{% endif %}"
@@ -31,7 +40,7 @@ _exclude:
 
 projectName:
   type: str
-  help: "Short camelCase project name, for example notesCli."
+  help: "Stable project name, for example notesCli. The Python package is lowercase."
   validator: >-
     {%- if not projectName or not projectName.isascii() or not projectName[0].isalpha() or not projectName.isalnum() -%}
     Use ASCII letters and digits, starting with a letter.
@@ -42,7 +51,6 @@ projectName:
 profile:
   type: str
   choices:
-    - cli
     - library
     - service
     - native
@@ -57,7 +65,7 @@ withPersistence:
 withTesting:
   type: bool
   default: true
-  help: "Include future test tooling without subject test bodies."
+  help: "Include meaningful foundation tests and complete Python coverage."
 
 withCi:
   type: bool
@@ -66,5 +74,5 @@ withCi:
 
 packageName:
   type: str
-  default: "{{ projectName }}"
+  default: "{{ projectName | lower }}"
   when: false

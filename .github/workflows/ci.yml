@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -12,36 +13,190 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: ./template/.github/actions/actionlint
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Restore the maintenance Docker toolchain
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile.quality
+          target: quality
+          load: true
+          tags: fastapitemplate:quality
+          cache-from: type=gha,scope=${{ github.repository_id }}-maintenance-python314-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-maintenance-python314-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+      - run: make check
+      - name: Maintenance coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: maintenance-coverage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 14
   template:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        persistence: [false, true]
+        include:
+          - {variant: noDbContainer, persistence: false, docker: true, kubernetes: true}
+          - {variant: dbContainer, persistence: true, docker: true, kubernetes: true}
+          - {variant: noDbHost, persistence: false, docker: false, kubernetes: false}
+          - {variant: dbHost, persistence: true, docker: false, kubernetes: false}
+    services:
+      postgres:
+        image: postgres:17.11-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+        env:
+          POSTGRES_USER: foundation
+          POSTGRES_PASSWORD: synthetic-test-only
+          POSTGRES_DB: foundation
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U foundation -d foundation"
+          --health-interval 2s --health-timeout 2s --health-retries 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: astral-sh/setup-uv@5a7eac68fb9809dea845d802897dc5c723910fa3 # v7.1.3
         with:
-          version: "0.12.15"
-          enable-cache: true
-      - run: uv python install 3.12
-      - name: Verify pinned source and compose
-        run: uv run --no-project --with 'copier==9.17.2' python _sources/pythonTemplate/tools/composeTemplate.py --repo . --smoke
-      - name: Render
-        run: uv run --no-project --with 'copier==9.17.2' copier copy --defaults . "$RUNNER_TEMP/rendered" -d projectName=exampleApi -d withPersistence=${{ matrix.persistence }}
-      - name: Lock, lint, type, build
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Restore the maintenance Docker toolchain
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile.quality
+          target: quality
+          load: true
+          tags: fastapitemplate:quality
+          cache-from: type=gha,scope=${{ github.repository_id }}-maintenance-python314-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+      - name: Fresh render with restrictive umask
+        run: |
+          umask 077
+          make render RENDER_OUTPUT="$RUNNER_TEMP/rendered" RENDER_ARGS='-d projectName=exampleApi -d withPersistence=${{ matrix.persistence }} -d withDocker=${{ matrix.docker }} -d withKubernetes=${{ matrix.kubernetes }}'
+      - uses: ./template/.github/actions/actionlint
+        with:
+          directory: ${{ runner.temp }}/rendered
+      - name: Resolve the first public lock inside Docker
+        run: docker run --rm --user "$(id -u):$(id -g)" --env UV_CACHE_DIR=/tmp/uv --mount "type=bind,source=$RUNNER_TEMP/rendered,target=/render" --workdir /render fastapitemplate:quality uv lock
+      - name: Restore the generated quality graph
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ runner.temp }}/rendered
+          file: ${{ runner.temp }}/rendered/${{ matrix.docker && 'Dockerfile' || 'Dockerfile.quality' }}
+          target: quality
+          load: true
+          tags: exampleapi:quality
+          cache-from: type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-quality-python312-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-${{ matrix.variant }}-quality-python312-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+      - name: Fresh generated checks and real PostgreSQL tests
+        working-directory: ${{ runner.temp }}/rendered
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://foundation:synthetic-test-only@127.0.0.1:5432/foundation
+        run: make check QUALITY_NETWORK=host
+      - name: Cached test image
+        if: matrix.docker
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ runner.temp }}/rendered
+          target: test
+          load: true
+          tags: exampleapi:test
+          cache-from: type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+      - name: Fresh installed-wheel tests
+        if: matrix.docker
+        working-directory: ${{ runner.temp }}/rendered
+        run: make verify
+      - name: Cached runtime image
+        if: matrix.docker
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: ${{ runner.temp }}/rendered
+          target: runtime
+          load: true
+          tags: exampleapi:candidate
+          cache-from: |
+            type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-test-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+            type=gha,scope=${{ github.repository_id }}-${{ matrix.variant }}-runtime-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-${{ matrix.variant }}-runtime-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
+      - name: Canonical artifacts
+        working-directory: ${{ runner.temp }}/rendered
+        run: make build
+      - uses: ./template/.github/actions/deployment-tools
+        if: matrix.kubernetes
+      - name: Chart validation and packaging
+        if: matrix.kubernetes
+        working-directory: ${{ runner.temp }}/rendered
+        run: make chart
+      - name: Local Kind acceptance
+        if: matrix.kubernetes
+        working-directory: ${{ runner.temp }}/rendered
+        env:
+          KUBECONFIG: ${{ runner.temp }}/foundation-kubeconfig
+        run: |
+          set -euo pipefail
+          cleanup() {
+            result=$?
+            set +e
+            kubectl --context kind-exampleapi-local -n foundation get pods,jobs
+            kubectl --context kind-exampleapi-local -n foundation get events --sort-by=.metadata.creationTimestamp
+            kubectl --context kind-exampleapi-local -n foundation logs -l app=foundation-database --tail=60
+            make undeploy-local
+            exit "$result"
+          }
+          trap cleanup EXIT
+          make deploy-local KUBECONFIG_LOCAL="$KUBECONFIG"
+          kubectl --context kind-exampleapi-local -n foundation port-forward service/exampleapi 18080:8000 > "$RUNNER_TEMP/port-forward.log" 2>&1 &
+          curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:18080/health/ready
+          helm upgrade exampleapi deploy/chart --kube-context kind-exampleapi-local --namespace foundation --reuse-values --set replicaCount=3 --wait --timeout 120s --rollback-on-failure
+          helm rollback exampleapi 1 --kube-context kind-exampleapi-local --namespace foundation --wait --timeout 120s
+      - name: Save the verified local runtime
+        if: matrix.docker
         working-directory: ${{ runner.temp }}/rendered
         run: |
-          uv lock
-          uv sync --locked --python 3.12
-          uv run --locked ruff check .
-          uv run --locked ruff format --check .
-          uv run --locked mypy
-          uv build
-      - name: Container build
-        working-directory: ${{ runner.temp }}/rendered
-        run: docker build --file Dockerfile --tag example-api:ci .
-      - name: Empty suite status
-        run: |
-          echo 'NOT_CONFIGURED: no subject tests in new scaffold'
+          docker image inspect exampleapi:candidate > dist/runtime-image.json
+          docker save exampleapi:candidate | gzip --no-name > dist/runtime-image.docker.tar.gz
+          find dist -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > dist/SHA256SUMS
+      - name: Evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: render-${{ matrix.variant }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/rendered/coverage/
+            ${{ runner.temp }}/rendered/dist/*
+            !${{ runner.temp }}/rendered/dist/runtime-image.docker.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+      - name: Short-lived tested runtime candidate
+        if: matrix.docker
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: runtime-${{ matrix.variant }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/rendered/dist/runtime-image.docker.tar.gz
+            ${{ runner.temp }}/rendered/dist/runtime-image.json
+            ${{ runner.temp }}/rendered/dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 1
+  required:
+    if: always()
+    needs: [source, template]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          TEMPLATE_RESULT: ${{ needs.template.result }}
+        run: test "$SOURCE_RESULT" = success && test "$TEMPLATE_RESULT" = success

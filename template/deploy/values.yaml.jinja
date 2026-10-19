@@ -1,0 +1,10 @@
+# Use the checksummed fastapi-service chart artifact from fastApiTemplate CI.
+# Set image.repository and image.digest to the tested runtime artifact.
+image:
+  repository: ""
+  digest: ""
+database:
+  enabled: {{ withPersistence | lower }}
+  secretName: ""
+migration:
+  enabled: false

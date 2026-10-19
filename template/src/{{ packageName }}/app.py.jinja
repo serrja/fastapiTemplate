@@ -2,51 +2,46 @@
 
 from __future__ import annotations
 
-{% if withPersistence %}import asyncio
-{% endif -%}
 import logging
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from contextlib import (
+    AbstractAsyncContextManager,
+{% if withPersistence %}    AsyncExitStack,
+{% endif %}    asynccontextmanager,
+)
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request, Response
-{% if withPersistence %}from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncEngine
+from fastapi import FastAPI, Request, Response
 
-{% else %}
-{% endif -%}
-{% block packageImports %}from {{ packageName }}.errors import configureErrorHandlers
-{% if withPersistence %}from {{ packageName }}.persistence import createEngine, sessionFactory
-{% endif %}from {{ packageName }}.resources import ApplicationResources, getResources
+from {{ packageName }}.api.health import router as health_router
+{% block packageImports %}from {{ packageName }}.errors import configure_error_handlers
+{% if withPersistence %}from {{ packageName }}.persistence import create_engine, session_factory
+{% endif %}from {{ packageName }}.resources import ApplicationResources
 from {{ packageName }}.settings import ServiceSettings
-
-{% endblock -%}
-
+{% endblock %}
 REQUEST_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 LOGGER = logging.getLogger("{{ projectName }}")
 
 
-def createLifespan(
+def create_lifespan(
     settings: ServiceSettings,
 ) -> Callable[[FastAPI], AbstractAsyncContextManager[None, bool | None]]:
-    """Acquire enabled resources and dispose them even after partial startup."""
+    """Acquire enabled resources and dispose them after partial startup."""
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-{% if withPersistence %}        engine: AsyncEngine | None = None
-        try:
-            engine = createEngine(settings)
+{% if withPersistence %}        async with AsyncExitStack() as stack:
+            engine = create_engine(settings)
+            stack.push_async_callback(engine.dispose)
             application.state.resources = ApplicationResources(
-                engine=engine, sessionFactory=sessionFactory(engine)
+                engine=engine, session_factory=session_factory(engine)
             )
-            yield
-        finally:
-            if hasattr(application.state, "resources"):
-                del application.state.resources
-            if engine is not None:
-                await engine.dispose()
+            try:
+                yield
+            finally:
+                if hasattr(application.state, "resources"):
+                    del application.state.resources
 {% else %}        application.state.resources = ApplicationResources()
         try:
             yield
@@ -56,48 +51,29 @@ def createLifespan(
     return lifespan
 
 
-def createApp(settings: ServiceSettings | None = None) -> FastAPI:
+def create_app(settings: ServiceSettings | None = None) -> FastAPI:
     """Compose HTTP behavior without import-time settings or network effects."""
-    resolvedSettings = settings if settings is not None else ServiceSettings()
-    LOGGER.setLevel(resolvedSettings.logLevel)
+    resolved_settings = settings if settings is not None else ServiceSettings()
+    LOGGER.setLevel(resolved_settings.log_level)
     application = FastAPI(
         title="{{ projectName }}",
-        lifespan=createLifespan(resolvedSettings),
+        lifespan=create_lifespan(resolved_settings),
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
     )
-    configureErrorHandlers(application)
+    configure_error_handlers(application)
 
     @application.middleware("http")
-    async def correlationId(
-        request: Request, callNext: Callable[[Request], Awaitable[Response]]
+    async def correlation_id(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         incoming = request.headers.get("X-Request-ID", "")
-        requestId = incoming if REQUEST_ID.fullmatch(incoming) else str(uuid4())
-        request.state.requestId = requestId
-        response = await callNext(request)
-        response.headers["X-Request-ID"] = requestId
+        request_id = incoming if REQUEST_ID.fullmatch(incoming) else str(uuid4())
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
         return response
 
-    @application.get("/health/live", include_in_schema=False)
-    async def live() -> dict[str, str]:
-        return {"status": "alive"}
-
-    @application.get("/health/ready", include_in_schema=False)
-    async def ready(request: Request) -> dict[str, str]:
-        resources = getResources(request)
-{% if withPersistence %}        try:
-            async with asyncio.timeout(2.0):
-                async with resources.engine.connect() as connection:
-                    await connection.execute(text("SELECT 1"))
-        except (OSError, TimeoutError, SQLAlchemyError) as error:
-            LOGGER.warning("Required database unavailable")
-            raise HTTPException(
-                status_code=503, detail="Required dependency unavailable"
-            ) from error
-{% else %}        if not resources.ready:
-            raise HTTPException(status_code=503, detail="Required dependency unavailable")
-{% endif %}        return {"status": "ready"}
-
+    application.include_router(health_router)
 {% block configureApplication %}{% endblock %}    return application

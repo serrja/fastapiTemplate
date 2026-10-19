@@ -1,14 +1,25 @@
 # {{ projectName }} architecture
 
-`createApp` is the composition root. FastAPI lifespan owns resources per worker, and the settings boundary validates enabled components. The pristine app has only liveness and readiness. Routers, application scenarios, and adapters are added for real product operations.
+`create_app` is the composition root. A FastAPI lifespan owns each worker's resources and closes them after partial startup or normal shutdown. Imports do not create configured resources. Health routes use `APIRouter`; product routers belong to the application.
 
-{% if withPersistence %}The database dependency opens a short transaction for one HTTP request and commits or rolls back before the response is sent. Repositories and handlers do not commit. Serialize ORM data before cleanup, never share an `AsyncSession` across concurrent tasks, and keep external network calls outside a database transaction. Streaming, WebSocket, and background work require their own short sessions. Alembic contains no subject revision; use a disposable database to develop schema changes.{% else %}Persistence is disabled. No DSN, engine, session, or database readiness connection is required.{% endif %}
+{% if withPersistence %}The request dependency owns a short transaction and commits or rolls back before the response is sent. Handlers and repositories do not commit. Serialize ORM data before cleanup; never share an `AsyncSession` between tasks. Keep external I/O outside a transaction. Streaming, WebSocket and background work need their own resource scope. Alembic revisions are application-owned and run explicitly, separately from replica startup.{% else %}Persistence is disabled; no engine, session, DSN or database readiness call is created.{% endif %}
 
-`PROJECT.md` and `SERVICE.md` belong to the generated application. Template updates review managed-file changes and preserve those documents, application code, settings, scopes, and migrations.
-{% if withTesting %}
-## 🧪 Test lifecycle
+{% if withTesting %}Ordinary HTTP/configuration/error/lifecycle tests use `with TestClient(application) as client`, with a new app and settings for each test. Only an expected handled HTTP 500 disables propagation. The actual async PostgreSQL transaction/readiness acceptance uses HTTPX `AsyncClient` and explicit lifespan in one event loop. TestClient does not receive another loop's session or pool. Real database integration is separate from isolated tests; synthetic connection-boundary fakes are not evidence of PostgreSQL availability.
 
-The optional test group supplies pytest, pytest-asyncio, HTTPX, and asgi-lifespan. Build a fresh app with explicit settings inside an isolated test environment. Wrap `createApp(settings)` in `LifespanManager` before using `httpx.AsyncClient(transport=httpx.ASGITransport(app=application))`; ASGITransport alone does not start lifespan. Keep the app, client, and event loop at compatible scopes, and clear `application.dependency_overrides` in cleanup. No subject test is generated, so an empty collection is `notConfigured`.
-
-For database integration, create a disposable database or schema/user with bounded readiness, and remove only that run's resources afterward. Do not use a live DSN or rely on one rollback to isolate DDL, multiple connections, or internal commits. A unique Compose project can provide the disposable dependency; this scaffold does not start one automatically.
+Managed tests use `tests/foundation`; application-owned tests remain in their existing paths. Coverage measures every own runtime module, including modules not imported by the suite, and reports statements and branches separately with advisory percentages. Installed-wheel container tests run from `/checks`, outside the build source path. Test assets
+include project-owned tools and migration files, while `src/` is explicitly excluded and the
+package test verifies its installed origin. `make test` starts with a new integration coverage
+measurement on a disposable DB, then appends isolated execution and writes a fresh report without a numerical gate; a
+restored or previous report cannot replace current tests. Root `tests/*_integration.py` files are
+included so project-owned migration cases survive updates.
 {% endif %}
+
+{% if withDocker %}The Docker recipe separates locked dependencies, wheel build, test environment and minimal runtime. BuildKit layer reuse follows actual inputs; tests rerun after a cached solve. Runtime contains the installed wheel and production dependencies, without compiler, Git, uv or the test runner. UID 65532 and normalized read permissions support restrictive source umasks and a read-only runtime filesystem.
+{% endif %}{% if withKubernetes %}
+
+The FastAPI base owns the managed Helm chart. Deployments have independent liveness/readiness/startup probes, bounded resources, no service-account token mount, no extra capabilities and a read-only filesystem. An optional migration hook uses the same image and an existing Secret. Chart upgrades and rollbacks use an already tested artifact; they do not reverse historical database changes. `.local/kubeconfig` belongs only to the disposable local contour and is ignored by Git.
+{% endif %}
+
+Project-owned Make commands belong in `Makefile.local`; the common Makefile includes it without
+copying shared recipes. `HTTP_HOST`, `HTTP_PORT` and `UVICORN_FLAGS` customize the optional native `make CONTAINERIZED=1 run`
+command. Production container arguments stay fixed and do not inherit development reload flags.

@@ -9,28 +9,47 @@ _skip_if_exists:
   - SERVICE.md
   - "src/*/settings.py"
   - "migrations/**"
+  - "tests/test_http.py"
+  - "tests/database_integration.py"
+  - "deploy/values.yaml"
 _exclude:
+  - .vscode
+  - .vscode/**
+  - .serena
+  - .serena/**
   - "_base"
   - "_base/**"
   - "{% if not withCi %}.github/workflows{% endif %}"
   - "{% if not withCi %}.github/workflows/**{% endif %}"
+  - "{% if not withCi %}.github/actions{% endif %}"
+  - "{% if not withCi %}.github/actions/**{% endif %}"
   - "{% if not withTesting %}.pre-commit-config.yaml{% endif %}"
   - "{% if not withPersistence %}alembic.ini{% endif %}"
   - "{% if not withPersistence %}migrations/**{% endif %}"
   - "{% if not withPersistence %}migrations{% endif %}"
   - "{% if not withPersistence %}src/*/persistence.py{% endif %}"
+  - "{% if not withPersistence %}src/*/migration_status.py{% endif %}"
+  - "{% if not withPersistence %}tests/foundation/test_migrations.py{% endif %}"
+  - "{% if not withPersistence %}tests/database_integration.py{% endif %}"
+  - "{% if not withTesting %}tests/**{% endif %}"
+  - "{% if not withTesting %}tests{% endif %}"
   - "{% if not withDocker %}Dockerfile{% endif %}"
   - "{% if not withDocker %}.dockerignore{% endif %}"
+  - "{% if not (withDocker and withPersistence and withTesting) %}compose.test.yaml{% endif %}"
+  - "{% if not withPersistence %}tests/foundation/database_integration.py{% endif %}"
+  - "{% if not withPersistence %}deploy/local{% endif %}"
+  - "{% if not (withKubernetes | default(false)) %}deploy{% endif %}"
+  - "{% if not (withKubernetes | default(false)) %}deploy/**{% endif %}"
 projectName:
   type: str
-  help: "Short lower camelCase application name."
+  help: "Stable application name; new Python import package is lowercase."
   validator: >-
     {%- if not projectName or not projectName.isascii() or not projectName[0].islower() or not projectName.isalnum() -%}
     Use ASCII lower camelCase, starting with a lowercase letter.
     {%- endif -%}
 packageName:
   type: str
-  default: "{{ projectName }}"
+  default: "{{ projectName | lower }}"
   when: false
 projectDescription:
   type: str
@@ -51,8 +70,13 @@ withDocker:
 withTesting:
   type: bool
   default: true
-  help: "Include test tooling, without subject test bodies."
+  help: "Include technical HTTP, lifecycle, and configuration tests."
+withKubernetes:
+  type: bool
+  default: true
+  help: "Include values for the shared digest-pinned Helm deployment chart."
 withCi:
   type: bool
   default: true
   help: "Include CI for this generated application."
+  validator: "{% if withCi and not withTesting %}CI requires withTesting=true.{% endif %}"
