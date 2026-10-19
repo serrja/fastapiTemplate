@@ -72,3 +72,9 @@ The primary check/build path uses Git, Make and Docker. `coverage` reports a fre
 
 Read [HTTP observability](docs/observability.md) for metrics, safe logging, registry ownership
 and the supported worker model.
+
+## 📄 License
+
+Original additions use [MIT](LICENSE); inherited source and dependencies retain
+their [notices](THIRD_PARTY_NOTICES.md). Generated projects choose `licensePolicy`
+and their own holder/year through the common Python foundation.

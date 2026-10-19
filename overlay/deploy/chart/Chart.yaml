@@ -2,6 +2,6 @@ apiVersion: v2
 name: fastapi-service
 description: Generic non-root FastAPI deployment with optional explicit database migrations
 type: application
-version: 0.2.0-dev.0
+version: 0.3.0-dev.0
 appVersion: "application-owned"
 kubeVersion: ">=1.34.0-0"

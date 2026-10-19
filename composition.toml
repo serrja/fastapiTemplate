@@ -4,6 +4,11 @@ snapshot = "_sources/pythonTemplate"
 overlay = "overlay"
 output = "template"
 include = [
+  "_meta/license-questions.yml",
+  "LICENSE.jinja",
+  "LICENSES/pythonTemplate-MIT.txt",
+  "THIRD_PARTY_NOTICES.md.jinja",
+
   "docker/quality-python.mk",
   "Dockerfile.quality.dockerignore",
   ".github/workflows/contribution.yml",
