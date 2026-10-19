@@ -16,10 +16,10 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "732f5ce68b4b13ef900931ca4a47ef00acffa7cdb7b699feb0e8a8d7ac719d82",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "a56b3c465c7a493f25fd368b3ed3c95895b9572e7ec57ac0b2b5ac6a05eb691f",
+    ".template-source.json": "724ea3c01b2546b40e5f4a05ee325fe5c78d78bc899d89b4d05429aa2befd8a0",
     "AGENTS.md.jinja": "c22b27fcab3d4a887f8adbf26cd6b9c45c2d17fcc7ab1cd174573bc9e465091e",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
-    "Dockerfile.jinja": "0b9f7db2267497249521076faa1405823c0353aa592a72bb463b2d7974d05c76",
+    "Dockerfile.jinja": "33b30fb2327068c9dac041e64787c50a79e720b3ec8c7ea33c6202f84f8adfc7",
     "Dockerfile.quality": "d7c50a1fff554d6eb9e8d13837725ce038dd596c5374c006d1fff2c6bd3b8df3",
     "Dockerfile.quality.dockerignore": "b33c067b012b6ac670c6876493bb0ab63f68e4fb7c0722c35197e0e9161897d5",
     "LICENSE.jinja": "6cf866f34ac5be3c44e2749f192b6c067e3b4fe791dafe781a44d564d7a96986",
@@ -73,7 +73,7 @@
     "tests/foundation/test_package.py.jinja": "0deb617f92fd0d99648913a29b23d536893153076350ba862f562864549b7dd0",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "e7f49250a8b7044e1362e112b40a13130b258f3a2a55917e00f3ff8f1b03f45e",
+  "overlayContentSha256": "79d6b61122723eabe8d482b1fc1b11443b3d27045d4f57191279c89507fb881a",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -147,6 +147,6 @@
   },
   "parentContentSha256": "6bc1f02c39cc89335e11da128404d38168dbcb21d554606a190db02294200a9b",
   "schema": 1,
-  "sourceContentSha256": "298f939cfa5ed05e2b8c474b9cb159f9282a0b96f4fd9ddfca83ff2af3418459",
+  "sourceContentSha256": "c99ca2a44e323443625f091cc891e592d7338c59e51556691ccaf2b6aa614b7c",
   "templateVersion": "0.3.0.dev0"
 }
