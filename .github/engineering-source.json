@@ -36,10 +36,10 @@
     }
   },
   "rules": {
-    "contributing": "docs/contributing.md",
-    "naming": "docs/naming.md",
-    "testing": "docs/testing.md",
-    "versioning": "docs/versioning.md",
+    "contributing": "https://github.com/serrja/pythonTemplate/blob/main/docs/contributing.md",
+    "naming": "https://github.com/serrja/pythonTemplate/blob/main/docs/naming.md",
+    "testing": "https://github.com/serrja/pythonTemplate/blob/main/docs/testing.md",
+    "versioning": "https://github.com/serrja/pythonTemplate/blob/main/docs/versioning.md",
     "engineering": "https://github.com/serrja/pythonTemplate/blob/main/docs/engineering.md"
   },
   "codeowners": "Project-specific assignment; not inherited from the template.",
