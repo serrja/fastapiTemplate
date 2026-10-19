@@ -1,0 +1,114 @@
+"""Process-local Prometheus instrumentation and bounded structured HTTP logging."""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import UTC, datetime
+from typing import Literal
+
+from fastapi import FastAPI
+from prometheus_client import (
+    CollectorRegistry,
+    Gauge,
+    GCCollector,
+    PlatformCollector,
+    ProcessCollector,
+)
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from starlette.types import ASGIApp, Receive, Scope, Send
+
+
+class ObservabilitySettings(BaseSettings):
+    """Managed optional telemetry settings, independent of owner service settings."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="{{ projectName | upper }}_",
+        extra="ignore",
+        hide_input_in_errors=True,
+    )
+    environment: Literal["local", "dev", "ci", "remote"] = "local"
+    metrics_enabled: bool = True
+
+
+class RequestFormatter(logging.Formatter):
+    """Serialize safe fields, excluding URLs, bodies, headers and exception text."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        return json.dumps(
+            {
+                "time": datetime.fromtimestamp(record.created, UTC).isoformat(),
+                "level": record.levelname,
+                "service_id": "{{ projectName }}",
+                "environment": getattr(record, "environment", "local"),
+                "request_id": getattr(record, "request_id", None),
+                "operation": getattr(record, "operation", "none"),
+                "status": getattr(record, "status", None),
+                "duration_seconds": getattr(record, "duration_seconds", None),
+            },
+            separators=(",", ":"),
+        )
+
+
+def request_logger(level: str) -> logging.Logger:
+    """Give each app one handler without registering global handlers."""
+    logger = logging.Logger("{{ projectName }}.http", level)
+    handler = logging.StreamHandler()
+    handler.setFormatter(RequestFormatter())
+    logger.addHandler(handler)
+    logger.propagate = False
+    return logger
+
+
+class RequestsInProgress:
+    """Use the official Gauge context through the complete ASGI response lifecycle."""
+
+    def __init__(self, app: ASGIApp, gauge: Gauge) -> None:
+        self.app = app
+        self.gauge = gauge
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["path"] == "/metrics":
+            await self.app(scope, receive, send)
+        else:
+            with self.gauge.track_inprogress():
+                await self.app(scope, receive, send)
+
+
+def instrument(application: FastAPI) -> None:
+    """Own a registry per app, allowing repeatable factories and independent workers."""
+    registry = CollectorRegistry()
+    ProcessCollector(registry=registry)
+    PlatformCollector(registry=registry)
+    GCCollector(registry=registry)
+    # Bounded identity/environment labels are assigned by the scrape target.
+    Instrumentator(
+        registry=registry,
+        should_group_status_codes=False,
+        should_group_untemplated=True,
+        excluded_handlers=["^/metrics$"],
+    ).add(
+        metrics.requests(
+            should_include_method=False,
+            registry=registry,
+        ),
+        metrics.latency(
+            should_include_method=False,
+            should_include_status=False,
+            registry=registry,
+        ),
+    ).instrument(application).expose(
+        application,
+        endpoint="/metrics",
+        include_in_schema=False,
+    )
+    application.state.metrics_registry = registry
+    # Instrumentator 8.1 registers its optional gauge globally. Use the client API
+    # with this app's registry instead, avoiding duplicate global timeseries.
+    application.add_middleware(
+        RequestsInProgress,
+        gauge=Gauge(
+            "http_requests_inprogress", "Active HTTP requests", registry=registry
+        ),
+    )
