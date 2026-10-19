@@ -13,6 +13,10 @@ _skip_if_exists:
   - "tests/database_integration.py"
   - "deploy/values.yaml"
 _exclude:
+  - .vscode
+  - .vscode/**
+  - .serena
+  - .serena/**
   - "_base"
   - "_base/**"
   - "{% if not withCi %}.github/workflows{% endif %}"

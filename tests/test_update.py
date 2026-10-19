@@ -50,6 +50,11 @@ def test_copier_update_keeps_owner_documents_and_settings(tmp_path: Path) -> Non
     shutil.copy2(ROOT / "copier.yml", source / "copier.yml")
     shutil.copytree(ROOT / "template", source / "template")
     _git(source, "init", "--quiet")
+    for directory in [".vscode", ".serena"]:
+        marker = source / "template" / directory / "synthetic.txt"
+        marker.parent.mkdir()
+        marker.write_text("synthetic editor state")
+        _git(source, "add", "--force", str(marker.relative_to(source)))
     first = _commit(source, ("copier.yml", "template"), "initial FastAPI source")
 
     output = tmp_path / "output"
@@ -118,6 +123,8 @@ def test_copier_update_keeps_owner_documents_and_settings(tmp_path: Path) -> Non
         "# managed health marker"
         in (output / "src/sampleapi/api/health.py").read_text()
     )
+    assert not (output / ".vscode").exists()
+    assert not (output / ".serena").exists()
     assert not _git(output, "ls-files", "-u")
     assert not list(output.rglob("*.rej"))
 
