@@ -16,13 +16,13 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "732f5ce68b4b13ef900931ca4a47ef00acffa7cdb7b699feb0e8a8d7ac719d82",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "e1fab30447b7e5281ad0d18dfdecb2c395fa5452df9b898896dba5fcadebfd26",
+    ".template-source.json": "48ac64d0902facabe42245b1a5a3d04636ae56c358a34dfedfcf548161253115",
     "AGENTS.md.jinja": "88180e189e4151d9764228f6e039cb916a1b46ee543ff3511372ed1cc19bb865",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "552e804b4e58d19b8f35efb03625bc3014a569cae30760eccb9b1d0d168f1630",
     "Dockerfile.quality": "d7c50a1fff554d6eb9e8d13837725ce038dd596c5374c006d1fff2c6bd3b8df3",
     "Dockerfile.quality.dockerignore": "b33c067b012b6ac670c6876493bb0ab63f68e4fb7c0722c35197e0e9161897d5",
-    "Makefile.jinja": "a267e28791808d7df9063659ccf082854edd34ecf9ef79d47ea88c978a598a01",
+    "Makefile.jinja": "e97c7bb02f61b69787077d276e15e77c0d2aba550850c50ec70c9d928acfccef",
     "PROJECT.md.jinja": "d5bc786f311f73282d02270a5b97682a10559dc590c37d3dadec29975c84ee90",
     "README.md.jinja": "ebde86ea30a975e6c1dc28c61ff35dd1e894547d42320ebb09396c5242ef4082",
     "SERVICE.md.jinja": "d37c2c45ad049250c4c4426d22fb6df43ffe9b186d90e7b4d7d278d03938a92c",
@@ -65,7 +65,7 @@
     "tests/foundation/test_package.py.jinja": "0deb617f92fd0d99648913a29b23d536893153076350ba862f562864549b7dd0",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "6227d18280531e63fee2d68965e5b1a2b72cfc8bcf33bf24c05222093187af2b",
+  "overlayContentSha256": "6f4a798c85b680c0f19e24ffd6ed67ed71dce4bbe1f5501575cbb5729888bd42",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -131,6 +131,6 @@
   },
   "parentContentSha256": "4093897e6cda99f523a0c31904db305198ef1622f0e5971cf2cc7c7f1bd85f03",
   "schema": 1,
-  "sourceContentSha256": "9bb02b9744609da081fe423e9aaf55133175c498af796b65006cbbe9107caf98",
+  "sourceContentSha256": "69d5afb620d6182f4c3860e70b0ab54b0bfc442ec1e1b0cbe6405308f5c50444",
   "templateVersion": "0.2.0.dev0"
 }

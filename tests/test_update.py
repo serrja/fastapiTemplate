@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import shlex
 import shutil
 import subprocess
 import sys
@@ -191,3 +192,46 @@ def test_update_from_committed_baseline_keeps_project_tests_and_data(
     assert (output / "deploy/values.yaml").is_file()
     assert not _git(output, "ls-files", "-u")
     assert not list(output.rglob("*.rej"))
+
+
+@pytest.mark.parametrize("persistence", [False, True])
+def test_generated_host_image_command_selects_application_tag(
+    tmp_path: Path, persistence: bool
+) -> None:
+    """The documented host Make command must agree with runtime acceptance."""
+    source = tmp_path / "source"
+    source.mkdir()
+    shutil.copy2(ROOT / "copier.yml", source / "copier.yml")
+    shutil.copytree(ROOT / "template", source / "template")
+    _git(source, "init", "--quiet")
+    revision = _commit(source, ("copier.yml", "template"), "image command source")
+    output = tmp_path / "application"
+    _run(
+        *COPIER,
+        "copy",
+        "--quiet",
+        "--defaults",
+        f"--vcs-ref={revision}",
+        str(source),
+        str(output),
+        "-d",
+        "projectName=sampleApi",
+        "-d",
+        f"withPersistence={str(persistence).lower()}",
+        "-d",
+        "withCi=false",
+        "-d",
+        "withDocker=true",
+    )
+    _git(output, "init", "--quiet")
+    commands = _run("make", "--dry-run", "image", "CONTAINERIZED=0", cwd=output)
+    builds = [
+        shlex.split(line)
+        for line in commands.splitlines()
+        if line.startswith("docker buildx build ")
+    ]
+    assert len(builds) == 1
+    command = builds[0]
+    assert command[command.index("--tag") + 1] == "sampleapi:candidate"
+    assert command[command.index("--target") + 1] == "runtime"
+    assert "--load" in command
