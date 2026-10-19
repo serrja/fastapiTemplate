@@ -21,7 +21,7 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     volumes:
-      - ./coverage:/checks/coverage
+      - ./coverage/installed:/checks/coverage
     environment:
       TEST_DATABASE_URL: postgresql+asyncpg://foundation:synthetic-test-only@database:5432/foundation
     command:

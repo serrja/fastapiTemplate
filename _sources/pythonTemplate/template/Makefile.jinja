@@ -1,3 +1,8 @@
+ifneq ($(CONTAINERIZED),1)
+{% block dockerSettings %}QUALITY_IMAGE := {{ packageName }}:quality
+BUILD_DOCKERFILE := Dockerfile.quality{% endblock %}
+include docker/quality-python.mk
+else
 .DEFAULT_GOAL := help
 UV ?= uv
 
@@ -41,3 +46,5 @@ run: ## Run the existing command without rebuilding.
 
 # Project-owned commands survive Copier updates without copying shared recipes.
 -include Makefile.local
+
+endif

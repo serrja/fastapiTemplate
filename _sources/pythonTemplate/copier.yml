@@ -31,7 +31,6 @@ _exclude:
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations/**{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}migrations{% endif %}"
   - "{% if profile != 'service' %}Dockerfile{% endif %}"
-  - "{% if profile != 'service' %}.dockerignore{% endif %}"
   - "{% if profile != 'service' %}SERVICE.md{% endif %}"
   - "{% if profile != 'native' %}CMakeLists.txt{% endif %}"
   - "{% if profile != 'native' %}native/*{% endif %}"

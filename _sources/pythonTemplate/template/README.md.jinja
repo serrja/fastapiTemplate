@@ -27,7 +27,7 @@ make build
 
 ## 🧪 Testing
 
-{% if withTesting | default(true) %}Run `make check` for locked lint, types, meaningful foundation tests, and the full Python statement/branch coverage gate. JSON/XML reports are written under `coverage/`. Keep application tests alongside the managed `tests/foundation/` suite. A library or empty native adapter has no generated domain behavior; import checks do not prove native algorithms. Database integration requires disposable PostgreSQL and is separate from no-network checks.{% else %}Testing support was explicitly omitted. `make test` fails with an explanation; no test or coverage success is claimed.{% endif %}
+{% if withTesting | default(true) %}Run `make check` for locked lint, types, meaningful foundation tests, and whole-source Python statement/branch coverage reports (percentages are advisory). JSON/XML reports are written under `coverage/`. Keep application tests alongside the managed `tests/foundation/` suite. A library or empty native adapter has no generated domain behavior; import checks do not prove native algorithms. Database integration requires disposable PostgreSQL and is separate from no-network checks.{% else %}Testing support was explicitly omitted. `make test` fails with an explanation; no test or coverage success is claimed.{% endif %}
 
 ## 📚 Documentation
 

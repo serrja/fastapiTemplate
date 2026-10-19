@@ -4,6 +4,12 @@ snapshot = "_sources/pythonTemplate"
 overlay = "overlay"
 output = "template"
 include = [
+  "docker/quality-python.mk",
+  "Dockerfile.quality.dockerignore",
+  ".github/workflows/contribution.yml",
+  "docker/coverage_report.py",
+  "docker/quality.mk",
+  "Dockerfile.quality",
   ".copier-answers.yml.jinja",
   ".editorconfig",
   ".gitignore",

@@ -4,12 +4,12 @@ FastAPI foundation with process health routes. Product operations belong to this
 
 ## Run and verify
 
-Requires Python {{ pythonMinimum | default('3.12') }}+ and `uv`. Resolve and commit `uv.lock` once after a fresh render; existing checkouts enforce it.
+The canonical quality/build path uses Git, Make and Docker. Resolve and commit `uv.lock` once after a fresh render; existing checkouts enforce it. A native Python/uv loop is optional.
 
 ```bash
 uv lock
 make install
-make run
+make CONTAINERIZED=1 run
 ```
 
 `create_app` reads validated settings when called. Imports do not connect to the network. `GET /health/live` checks the process; `/health/ready` checks enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before normal startup. Migrations never run during application startup.{% else %} No DSN or credentials are needed.{% endif %}
@@ -27,7 +27,7 @@ make typecheck
 
 `make build` exports wheel/sdist from the Docker `artifacts` target; `make image` loads the runtime candidate. The runtime installs that wheel, uses UID 65532 and one Uvicorn process, and supports a read-only filesystem and bounded SIGTERM shutdown.
 {% if withTesting %}
-`make test-image` freshly tests the installed wheel in a container{% if withPersistence %} with a unique disposable Compose PostgreSQL project{% endif %}. It cleans only its own resources. Coverage is written to `coverage/`. A cached build never substitutes for executing tests.
+`make verify` freshly tests the installed wheel in a container{% if withPersistence %} with a unique disposable Compose PostgreSQL project{% endif %}. It cleans only its own resources. Installed coverage is written to `coverage/installed/`; source reports remain separate. Percentages are advisory; missing/stale reports and real check failures fail. A cached build never substitutes for executing tests.
 {% endif %}
 {% endif %}{% if withKubernetes %}## Kubernetes
 

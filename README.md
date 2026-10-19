@@ -16,7 +16,7 @@ make check
 make build
 ```
 
-A fresh render resolves its first lock; existing applications commit and enforce that lock. `withDocker=false` keeps a host wheel build. `withKubernetes=false` omits deployment files. CI requires testing support. Defaults include real managed foundation tests; empty test collection is a failure.
+A fresh render resolves its first lock; existing applications commit and enforce that lock. `withDocker=false` selects the generic Docker quality/artifact recipe. `withKubernetes=false` omits deployment files. CI requires testing support. Defaults include real managed foundation tests; empty test collection is a failure.
 
 For an existing clean application, run its supported Copier update against a reviewed commit, inspect unmerged paths, markers, `.rej`, deletions and the full diff, then run its checks. `PROJECT.md`, `SERVICE.md`, settings, historical migrations, seed tests and `deploy/values.yaml` remain application-owned. Managed tests use `tests/foundation/`; the shared chart is managed at `deploy/chart/`. A historical update test pins the actual earlier source commit.
 
@@ -25,10 +25,9 @@ For an existing clean application, run its supported Copier update against a rev
 Edit `overlay/`, `copier.yml`, `composition.toml` and maintenance tests. `template/`, `_sources/`, the mirrored tools and `composition.lock.json` are generated. The Python base owns the composer and its shared regression suite; copies are verified against their source identity.
 
 ```bash
-make install
-make compose
 make check
-make chart-check
+make coverage
+make verify
 ```
 
 For an intentional parent refresh, run the **reviewed parent's** composer; this also bootstraps newly introduced shared resources:
@@ -42,9 +41,9 @@ Review the recorded parent HEAD, dirty status, content hashes and generated diff
 
 ## Tests and artifacts
 
-`make check` measures canonical tooling separately from rendered runtime coverage. `make chart-check` runs accepted/rejected Helm schema and manifest contracts. CI renders DB/no-DB and Docker/Kubernetes on/off variants, runs full host checks, then freshly executes installed-wheel tests in containers. Database integration uses explicit disposable PostgreSQL, verifies commit/rollback and positive readiness. Ordinary HTTP tests use `with TestClient(...)`; a single-loop HTTPX test handles actual async DB integration.
+`make check` measures canonical tooling separately from rendered runtime coverage. `make chart-check` runs accepted/rejected Helm schema and manifest contracts. CI renders DB/no-DB and Docker/Kubernetes on/off variants, runs full Docker checks, then freshly executes installed-wheel tests in containers. Database integration uses explicit disposable PostgreSQL, verifies commit/rollback and positive readiness. Ordinary HTTP tests use `with TestClient(...)`; a single-loop HTTPX test handles actual async DB integration.
 
-Docker targets are `dependencies`, `wheel-builder`, `artifacts`, `test` and `runtime`. `make build` exports the wheel/sdist from the canonical recipe. `make test-image` executes tests after building, without cached `RUN pytest`. The final image has one Uvicorn process, non-root UID 65532, normalized readable migrations, bounded SIGTERM handling and a real liveness check. Test source cannot shadow the installed package.
+Docker targets are `dependencies`, `wheel-builder`, `quality`, `artifacts`, `test` and `runtime`. `make build` exports the wheel/sdist from the canonical recipe. `make verify` executes installed-wheel tests after building, without cached `RUN pytest`. The final image has one Uvicorn process, non-root UID 65532, normalized readable migrations, bounded SIGTERM handling and a real liveness check. Test source cannot shadow the installed package.
 
 The chart is authored only in `overlay/deploy/chart`, propagated by verified composition/Copier and packaged into a `.tgz` artifact. It requires a runtime digest; tag-only references require explicit `localDevelopment=true`. Deployments have probes, resource limits, read-only filesystems, no token mount and no extra capabilities. Optional migrations are a pre-install/pre-upgrade Job using the same artifact and an existing Secret. Helm rollback changes application resources; it does not reverse a database migration.
 
@@ -58,6 +57,8 @@ CI uses repository-scoped GHA layer cache with separate variant, target, platfor
 
 Generated projects may keep their published local commands in `Makefile.local`; Copier updates
 continue to own the shared Makefile. Persistence-enabled `make test` combines a fresh real DB
-integration run with isolated coverage before applying its 100% gate. Test-image assets include
+integration run with isolated coverage before writing advisory coverage reports. Test-image assets include
 owner tools and historical migrations while excluding `src/`; the suite asserts installed-wheel
 origin so a checkout cannot silently shadow the artifact.
+
+The primary check/build path uses Git, Make and Docker. `coverage` reports a fresh result without rerunning tests. Below 100% warns; assertions, types, configuration, builds and missing/corrupt/stale reports fail. Parent refresh is an explicit source-maintenance operation using the locked composer; it is not a runtime dependency.

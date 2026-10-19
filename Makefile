@@ -1,3 +1,13 @@
+ifneq ($(CONTAINERIZED),1)
+QUALITY_IMAGE := fastapitemplate:quality
+RUNTIME_IMAGE := fastapitemplate:candidate
+QUALITY_NETWORK := bridge
+QUALITY_EXTRA_TARGETS := docs-check format-check chart-check
+IMAGE_COMMAND = printf "%s\n" "notApplicable: maintenance source; runtime images belong to rendered applications"
+VERIFY_COMMAND = $(MAKE) render RENDER_OUTPUT="$(CURDIR)/.local/verified-render" RENDER_ARGS="-d projectName=verifyApi -d withTesting=false -d withCi=false"
+BUILD_COMMAND = printf "%s\n" "notApplicable: maintenance source; distributions are verified in disposable renders"
+include docker/quality-python.mk
+else
 .DEFAULT_GOAL := help
 UV ?= uv
 HELM ?= helm
@@ -33,5 +43,12 @@ chart: ## Package the shared deployment chart without publishing it.
 chart-check: ## Validate the chart's accepted and rejected configurations.
 	HELM=$(HELM) $(UV) run --locked pytest tests/chart_contract.py
 
-check: lint typecheck test ## Run every mandatory maintenance gate.
+format-check:
+	$(UV) run --locked ruff format --check tools tests
+docs-check:
+	$(UV) run --locked python tools/check_documentation.py --documents README.md AGENTS.md
+
+check: lint typecheck chart-check docs-check test ## Run every mandatory maintenance gate.
 	$(UV) lock --check
+
+endif
