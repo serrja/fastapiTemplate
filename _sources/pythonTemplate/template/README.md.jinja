@@ -1,6 +1,6 @@
 # {{ projectName }}
 
-{% if profile == 'cli' %}A typed Python command-line starting point. Add commands when the project's task is defined.{% elif profile == 'library' %}A typed Python library starting point. Define its public API before publishing.{% elif profile == 'service' %}A FastAPI service foundation with liveness/readiness and no product API.{% else %}A C++20 extension foundation with a private pybind11 module and Python package.{% endif %}
+{% if profile == 'library' %}A typed Python library starting point. Define its public API before publishing.{% elif profile == 'service' %}A FastAPI service foundation with liveness/readiness and no product API.{% else %}A C++20 extension foundation with a private pybind11 module and Python package.{% endif %}
 
 ## 🚀 Quick start
 
@@ -9,7 +9,7 @@ Requires Python 3.12+ and `uv`.{% if profile == 'native' %} Also requires a C++2
 ```bash
 uv lock
 uv sync --locked
-{% if profile == 'cli' %}uv run {{ projectName }} --help{% elif profile == 'service' %}uv run uvicorn {{ packageName }}.app:app --host 127.0.0.1 --port 8000{% elif profile == 'native' %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% else %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% endif %}
+{% if profile == 'service' %}uv run uvicorn {{ packageName }}.app:app --host 127.0.0.1 --port 8000{% elif profile == 'native' %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% else %}uv run python -c 'import {{ packageName }}; print({{ packageName }}.__name__)'{% endif %}
 ```
 
 ## 🧭 Architecture

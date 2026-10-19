@@ -81,6 +81,53 @@ def test_infrastructure_and_disabled_routes(
     assert set(application.openapi()["paths"]) == EXPECTED_OPENAPI_PATHS
 
 
+def test_method_not_allowed_preserves_allow(client: TestClient) -> None:
+    response = client.post("/health/live")
+    assert response.status_code == 405
+    assert "GET" in response.headers["allow"]
+
+
+@pytest.mark.parametrize(
+    ("status", "name", "value"),
+    [(401, "WWW-Authenticate", "Bearer"), (503, "Retry-After", "30")],
+)
+def test_protocol_headers_without_private_details(
+    application: FastAPI, client: TestClient, status: int, name: str, value: str
+) -> None:
+    @application.get("/technicalProtocolError")
+    async def fail() -> None:
+        raise HTTPException(
+            status,
+            detail="synthetic-private-value",
+            headers={
+                name: value,
+                "X-Private": "synthetic-private-value",
+                "Content-Length": "999",
+            },
+        )
+
+    response = client.get("/technicalProtocolError")
+    assert response.status_code == status
+    assert response.headers[name] == value
+    assert "x-private" not in response.headers
+    assert "synthetic-private-value" not in response.text
+    assert int(response.headers["content-length"]) == len(response.content)
+
+
+@pytest.mark.parametrize("status", [103, 204, 304])
+def test_bodyless_http_exception_uses_framework_semantics(
+    application: FastAPI, client: TestClient, status: int
+) -> None:
+    @application.get("/technicalBodyless")
+    async def fail() -> None:
+        raise HTTPException(status, detail="synthetic-private-value")
+
+    response = client.get("/technicalBodyless")
+    assert response.status_code == status
+    assert response.content == b""
+    assert "content-type" not in response.headers
+
+
 @pytest.mark.parametrize("incoming", ["probe-123", "a" * 64])
 def test_valid_request_id_is_preserved(client: TestClient, incoming: str) -> None:
     response = client.get("/health/live", headers={"X-Request-ID": incoming})

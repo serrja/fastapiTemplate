@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -12,7 +11,16 @@ import sys
 import tempfile
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
+
+import typer
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+app = typer.Typer(
+    help=__doc__,
+    pretty_exceptions_show_locals=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 IGNORED_PARTS = {
     ".git",
@@ -22,8 +30,28 @@ IGNORED_PARTS = {
     ".ruff_cache",
     ".pytest_cache",
 }
-BASE_TEMPLATE_VERSION = "0.2.0.dev0"
+BASE_TEMPLATE_VERSION = "0.3.0.dev0"
 BASE_ANSWERS_SCHEMA = 1
+
+
+class CompositionConfig(BaseModel):
+    """Closed, versioned input schema; filesystem authorization remains separate."""
+
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    template_version: str = Field(alias="templateVersion", min_length=1)
+    answers_schema: Annotated[int, Field(strict=True, gt=0)] = Field(
+        alias="answersSchema"
+    )
+    snapshot: str
+    overlay: str
+    output: str
+    include: list[str]
+    include_repository: list[str] = Field(
+        default_factory=list, alias="includeRepository"
+    )
+    allow_override: list[str] = Field(default_factory=list, alias="allowOverride")
+    retain_base: dict[str, str] = Field(default_factory=dict, alias="retainBase")
+    smoke_answers: dict[str, str | bool | int] = Field(alias="smokeAnswers")
 
 
 def source_files(root: Path) -> dict[str, Path]:
@@ -61,8 +89,13 @@ def copy_files(files: dict[str, Path], destination: Path) -> None:
 
 def load_config(repo: Path) -> dict[str, Any]:
     with (repo / "composition.toml").open("rb") as file:
-        data: dict[str, Any] = tomllib.load(file)
-    return data
+        data = tomllib.load(file)
+    try:
+        return CompositionConfig.model_validate(data).model_dump(by_alias=True)
+    except ValidationError:
+        raise ValueError(
+            "Invalid composition contract; check field types and schema"
+        ) from None
 
 
 def stamp_base(repo: Path) -> str:
@@ -205,12 +238,9 @@ def refresh_snapshot(repo: Path, base: Path, snapshot: Path) -> None:
 
 
 def assemble(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
-    template_version = config["templateVersion"]
-    answers_schema = config["answersSchema"]
-    if not isinstance(template_version, str) or not template_version:
-        raise ValueError("Derivative templateVersion must be a nonempty string")
-    if type(answers_schema) is not int or answers_schema < 1:
-        raise ValueError("Derivative answersSchema must be a positive integer")
+    validated = CompositionConfig.model_validate(config)
+    template_version = validated.template_version
+    answers_schema = validated.answers_schema
     snapshot = repo / config["snapshot"]
     for name in ("compose_template.py", "test_composition.py"):
         derived_tool = repo / "tools" / name
@@ -238,6 +268,21 @@ def assemble(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Pinned parent source identity does not match its snapshot")
     base_files = source_files(snapshot / "template")
     overlay_files = source_files(overlay)
+    repository_files: dict[str, Path] = {}
+    for name in config.get("includeRepository", []):
+        path = repo / name
+        if (
+            Path(name).is_absolute()
+            or ".." in Path(name).parts
+            or any(part in IGNORED_PARTS for part in Path(name).parts)
+            or path.is_symlink()
+            or not path.is_file()
+            or not path.resolve().is_relative_to(repo.resolve())
+        ):
+            raise ValueError("Invalid repository-owned composition source")
+        repository_files[name] = path
+    if repository_files.keys() & (base_files.keys() | overlay_files.keys()):
+        raise ValueError("Repository-owned source collides with parent or overlay")
     include = set(config["include"])
     missing = include - base_files.keys()
     if missing:
@@ -261,7 +306,8 @@ def assemble(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(base_files[old_name], target)
         copy_files(overlay_files, staging)
-        overlay_identity = content_identity(overlay_files)
+        copy_files(repository_files, staging)
+        overlay_identity = content_identity(overlay_files | repository_files)
         config_identity = hashlib.sha256(
             (repo / "composition.toml").read_bytes()
         ).hexdigest()
@@ -312,6 +358,7 @@ def assemble(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f"Output has no ownership record: {output}")
         owners = {name: "parent" for name in include}
         owners.update({name: "overlay" for name in overlay_files})
+        owners.update({name: "repository" for name in repository_files})
         owners.update(
             {new: "retainedParent" for new in config.get("retainBase", {}).values()}
         )
@@ -361,35 +408,41 @@ def smoke_copier(repo: Path, answers: dict[str, Any]) -> None:
         subprocess.run([*command, str(repo), str(destination)], check=True)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", type=Path, default=Path.cwd())
-    parser.add_argument("--refresh-base", type=Path)
-    parser.add_argument("--smoke", action="store_true")
-    parser.add_argument("--stamp-base", action="store_true")
-    args = parser.parse_args()
-    repo = args.repo.resolve()
-    if args.stamp_base:
+@app.command(name="compose")
+def compose(
+    repo: Annotated[Path, typer.Option("--repo")] = Path("."),
+    refresh_base: Annotated[Path | None, typer.Option("--refresh-base")] = None,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+    stamp: Annotated[bool, typer.Option("--stamp-base")] = False,
+) -> None:
+    """Materialize or explicitly refresh the declared source composition."""
+    repo = repo.resolve()
+    if stamp:
         print(f"pythonTemplate={stamp_base(repo)}")
         return
     config = load_config(repo)
     snapshot = repo / config["snapshot"]
-    if args.refresh_base is not None:
+    if refresh_base is not None:
         running_tool = Path(__file__).resolve()
         running_identity = hashlib.sha256(running_tool.read_bytes()).digest()
-        refresh_snapshot(repo, args.refresh_base.resolve(), snapshot)
+        refresh_snapshot(repo, refresh_base.resolve(), snapshot)
         if hashlib.sha256(running_tool.read_bytes()).digest() != running_identity:
             command = [sys.executable, str(running_tool), "--repo", str(repo)]
-            if args.smoke:
+            if smoke:
                 command.append("--smoke")
             subprocess.run(command, check=True)
             return
     record = assemble(repo, config)
     print(f"parent={record['parentContentSha256']}")
     print(f"overlay={record['overlayContentSha256']}")
-    if args.smoke:
+    if smoke:
         smoke_copier(repo, config["smokeAnswers"])
 
 
+def main() -> None:
+    """Retain the maintenance callable while Typer owns argument parsing."""
+    app(standalone_mode=False)
+
+
 if __name__ == "__main__":
-    main()
+    app()

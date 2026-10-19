@@ -15,14 +15,11 @@ _exclude:
   - "{% if not (withCi | default(true)) %}.github/actions{% endif %}"
   - "{% if not (withCi | default(true)) %}.github/actions/**{% endif %}"
   - "{% if not (withTesting | default(true)) %}.pre-commit-config.yaml{% endif %}"
-  - "{% if profile != 'cli' %}src/*/cli.py{% endif %}"
-  - "{% if profile != 'cli' %}src/*/__main__.py{% endif %}"
   - "{% if profile != 'service' %}src/*/app.py{% endif %}"
   - "{% if profile != 'service' %}src/*/health.py{% endif %}"
   - "{% if not (withTesting | default(true)) %}tests/**{% endif %}"
   - "{% if not (withTesting | default(true)) %}tests{% endif %}"
   - "{% if profile != 'service' %}tests/test_health.py{% endif %}"
-  - "{% if profile != 'cli' %}tests/foundation/test_cli.py{% endif %}"
   - "{% if profile != 'native' %}tests/foundation/test_native.py{% endif %}"
   - "{% if profile != 'service' or not (withPersistence | default(false)) %}tests/foundation/test_legacy_persistence.py{% endif %}"
   - "{% if profile != 'service' %}src/*/settings.py{% endif %}"
@@ -50,7 +47,6 @@ projectName:
 profile:
   type: str
   choices:
-    - cli
     - library
     - service
     - native

@@ -6,7 +6,7 @@ else
 .DEFAULT_GOAL := help
 UV ?= uv
 
-.PHONY: help install format lint typecheck test test-unit check build{% if profile == 'cli' %} run{% endif %}
+.PHONY: help install format lint typecheck test test-unit check build{% block extraPhony %}{% endblock %}
 
 help: ## Show the supported development commands.
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,10 +39,7 @@ check: lint typecheck{% if withTesting | default(true) %} test{% endif %} ## Run
 
 {% block buildCommand %}build: ## Build the wheel and source distribution.
 	$(UV) build --no-build-isolation
-{% endblock %}{% if profile == 'cli' %}
-run: ## Run the existing command without rebuilding.
-	$(UV) run --locked {{ projectName }}
-{% endif %}{% block extraCommands %}{% endblock %}
+{% endblock %}{% block runCommand %}{% endblock %}{% block extraCommands %}{% endblock %}
 
 # Project-owned commands survive Copier updates without copying shared recipes.
 -include Makefile.local

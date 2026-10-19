@@ -335,7 +335,9 @@ def test_main_stamp_entrypoint(
     base: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr(sys, "argv", [str(TOOL), "--repo", str(base), "--stamp-base"])
-    runpy.run_path(str(TOOL), run_name="__main__")
+    with pytest.raises(SystemExit) as status:
+        runpy.run_path(str(TOOL), run_name="__main__")
+    assert status.value.code == 0
     stamp = json.loads((base / "template/.template-source.json").read_text())
     assert f"pythonTemplate={stamp['sourceContentSha256']}" in capsys.readouterr().out
 
@@ -394,3 +396,45 @@ def test_copier_failure_is_not_suppressed(
     shutil.rmtree(root / "template")
     with pytest.raises(subprocess.CalledProcessError):
         composer.smoke_copier(root, {})
+
+
+def test_canonical_repository_source_is_hashed_and_published(
+    derivative: tuple[Path, dict[str, Any]],
+) -> None:
+    root, config = derivative
+    source = write(root / ".github/scripts/admission.py", "print('first')\n")
+    config["includeRepository"] = [".github/scripts/admission.py"]
+    first = composer.assemble(root, config)
+    assert first["owners"][".github/scripts/admission.py"] == "repository"
+    assert (
+        root / "template/.github/scripts/admission.py"
+    ).read_bytes() == source.read_bytes()
+    source.write_text("print('second')\n")
+    second = composer.assemble(root, config)
+    assert first["sourceContentSha256"] != second["sourceContentSha256"]
+
+
+@pytest.mark.parametrize(
+    "name", ["../outside", "/absolute", "missing", "overlay/base.txt"]
+)
+def test_repository_source_cannot_escape_or_replace_other_owner(
+    derivative: tuple[Path, dict[str, Any]], name: str
+) -> None:
+    root, config = derivative
+    config["includeRepository"] = [name]
+    if name == "overlay/base.txt":
+        # A symlink is rejected even when it targets a regular source file.
+        (root / "overlay/base.txt").unlink()
+        (root / "overlay/base.txt").symlink_to(root / "copier.yml")
+    with pytest.raises(ValueError):
+        composer.assemble(root, config)
+
+
+def test_repository_source_collision_is_rejected(
+    derivative: tuple[Path, dict[str, Any]],
+) -> None:
+    root, config = derivative
+    write(root / "base.txt", "cannot replace the parent/overlay\n")
+    config["includeRepository"] = ["base.txt"]
+    with pytest.raises(ValueError, match="collides"):
+        composer.assemble(root, config)

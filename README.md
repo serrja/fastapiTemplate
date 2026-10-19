@@ -43,6 +43,13 @@ Review the recorded parent HEAD, dirty status, content hashes and generated diff
 
 `make check` measures canonical tooling separately from rendered runtime coverage. `make chart-check` runs accepted/rejected Helm schema and manifest contracts. CI renders DB/no-DB and Docker/Kubernetes on/off variants, runs full Docker checks, then freshly executes installed-wheel tests in containers. Database integration uses explicit disposable PostgreSQL, verifies commit/rollback and positive readiness. Ordinary HTTP tests use `with TestClient(...)`; a single-loop HTTPX test handles actual async DB integration.
 
+Pydantic owns HTTP models and lazy application settings. Framework errors use FastAPI's standard
+handler after sanitizing details, preserving required authentication, retry and method headers.
+Persistence renders expose `migration_status.read_heads(config, connection)`: Alembic's public
+APIs inspect empty, branched and non-hex revision sets, and a Pydantic receipt serializes the
+result. The caller owns connections and migration execution. Generic HTTP applications do not
+inherit a Typer runtime unless they need a real management CLI.
+
 Docker targets are `dependencies`, `wheel-builder`, `quality`, `artifacts`, `test` and `runtime`. `make build` exports the wheel/sdist from the canonical recipe. `make verify` executes installed-wheel tests after building, without cached `RUN pytest`. The final image has one Uvicorn process, non-root UID 65532, normalized readable migrations, bounded SIGTERM handling and a real liveness check. Test source cannot shadow the installed package.
 
 The chart is authored only in `overlay/deploy/chart`, propagated by verified composition/Copier and packaged into a `.tgz` artifact. It requires a runtime digest; tag-only references require explicit `localDevelopment=true`. Deployments have probes, resource limits, read-only filesystems, no token mount and no extra capabilities. Optional migrations are a pre-install/pre-upgrade Job using the same artifact and an existing Secret. Helm rollback changes application resources; it does not reverse a database migration.

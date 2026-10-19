@@ -24,6 +24,8 @@ _exclude:
   - "{% if not withPersistence %}migrations/**{% endif %}"
   - "{% if not withPersistence %}migrations{% endif %}"
   - "{% if not withPersistence %}src/*/persistence.py{% endif %}"
+  - "{% if not withPersistence %}src/*/migration_status.py{% endif %}"
+  - "{% if not withPersistence %}tests/foundation/test_migrations.py{% endif %}"
   - "{% if not withPersistence %}tests/database_integration.py{% endif %}"
   - "{% if not withTesting %}tests/**{% endif %}"
   - "{% if not withTesting %}tests{% endif %}"

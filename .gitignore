@@ -14,3 +14,4 @@ coverage/
 .local/
 backups/
 /core.[0-9]*
+.vscode/
