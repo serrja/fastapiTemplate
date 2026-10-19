@@ -80,3 +80,6 @@ withCi:
   default: true
   help: "Include CI for this generated application."
   validator: "{% if withCi and not withTesting %}CI requires withTesting=true.{% endif %}"
+
+---
+!include template/_meta/license-questions.yml

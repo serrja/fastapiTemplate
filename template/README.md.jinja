@@ -37,3 +37,21 @@ make typecheck
 {% endif %}{% endif %}
 
 `PROJECT.md`, `SERVICE.md`, settings, migrations, seed tests and deployment values are application-owned. Review updates and provenance before applying them. See [architecture](docs/architecture.md) and [contribution guide](CONTRIBUTING.md). CI preserves artifacts and coverage; registry publication and release require separate configured targets and authorization.
+
+## 📄 License policy
+
+Copier records `licensePolicy` and, for MIT, the project owner's holder/year.
+The default `unlicensed` choice grants no project redistribution license.
+[Scaffold attribution and dependency terms](THIRD_PARTY_NOTICES.md) remain separate.
+Existing owner license files survive updates.
+
+## 📊 Server logging and worker model
+
+The runtime passes `app_logging.json` to Uvicorn's native log configuration. The
+bounded JSON formatter excludes message text, traceback and locals; unhandled
+exceptions retain only their class alongside the correlated HTTP status record.
+Use one worker per container, as the generated command enforces. Each process/app
+owns an independent Prometheus registry; scale replicas and aggregate scrape
+series. An externally overridden multi-worker command does not provide combined
+metrics and is outside this deployment profile. Telemetry writes to local stderr;
+collector failure does not become a request-path network dependency.

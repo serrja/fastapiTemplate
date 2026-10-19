@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
+import logging.config
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from prometheus_client.parser import text_string_to_metric_families
 
 from {{ packageName }}.app import create_app
-from {{ packageName }}.observability import ObservabilitySettings
+from {{ packageName }}.observability import ObservabilitySettings, RequestFormatter
 from {{ packageName }}.settings import ServiceSettings
 
 
@@ -85,3 +88,35 @@ def test_duplicate_request_ids_are_replaced() -> None:
             headers=[("X-Request-ID", "first"), ("X-Request-ID", "second")],
         )
         assert reply.headers["X-Request-ID"] not in {"first", "second", "first, second"}
+
+
+def test_exception_formatter_and_native_server_log_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("{{ projectName | upper }}_ENVIRONMENT", "ci")
+    try:
+        raise RuntimeError("synthetic-private-error-sentinel")
+    except RuntimeError:
+        import sys
+
+        record = logging.LogRecord(
+            "uvicorn.error",
+            logging.ERROR,
+            __file__,
+            1,
+            "private message %s",
+            ("private-token",),
+            sys.exc_info(),
+        )
+    output = RequestFormatter().format(record)
+    value = json.loads(output)
+    assert value["exception_class"] == "RuntimeError"
+    assert value["environment"] == "ci"
+    assert "synthetic-private-error-sentinel" not in output
+    assert "private message" not in output and "private-token" not in output
+    config = json.loads(Path("app_logging.json").read_text())
+    # Exercise the stdlib resolver without changing pytest's process loggers.
+    formatter = logging.config.DictConfigurator(config).configure_formatter(
+        config["formatters"]["safe"]
+    )
+    assert json.loads(formatter.format(record))["exception_class"] == "RuntimeError"
