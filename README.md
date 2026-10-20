@@ -22,6 +22,8 @@ For an existing clean application, run its supported Copier update against a rev
 
 ## Ownership and composition
 
+The [contribution guide](CONTRIBUTING.md) describes review, checks and artifact evidence.
+
 Edit `overlay/`, `copier.yml`, `composition.toml` and maintenance tests. `template/`, `_sources/`, the mirrored tools and `composition.lock.json` are generated. The Python base owns the composer and its shared regression suite; copies are verified against their source identity.
 
 ```bash
