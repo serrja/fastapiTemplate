@@ -19,16 +19,18 @@ RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python -m docker.chart_release release-ch
 chart: quality-image
 	$(QUALITY_RUN) make chart
 {% endif %}
-{% if withDocker %}QUALITY_DOCKERFILE := Dockerfile
-RUNTIME_IMAGE := {{ packageName }}:candidate
-BUILD_DOCKERFILE := Dockerfile
+QUALITY_DOCKERFILE := Dockerfile{% if not withDocker %}.quality{% endif %}
+BUILD_DOCKERFILE := $(QUALITY_DOCKERFILE)
+{% if withDocker %}RUNTIME_IMAGE := {{ packageName }}:candidate
+{% else %}IMAGE_COMMAND = printf "%s\n" "notApplicable: runtime delivery disabled for this render"
+{% endif %}
 VERIFY_COMMAND = $(MAKE) CONTAINERIZED=1 test-image && $(QUALITY_RUN) python docker/coverage_report.py coverage/installed/coverage.json --after coverage/installed/.started --output coverage/installed/summary.md
 verify: quality-image
-{% if withKubernetes %}.PHONY: chart deploy-local undeploy-local
+{% if withDocker and withKubernetes %}.PHONY: chart deploy-local undeploy-local
 deploy-local undeploy-local:
 	$(MAKE) CONTAINERIZED=1 $@
 {% endif %}
-{% endif %}{% endblock %}
+{% endblock %}
 
 {% block fullTestTarget %}{% if withPersistence and withTesting %}test: ## Measure integration and isolated tests together without stale coverage.
 	$(UV) run --locked python -m coverage run -m pytest --junitxml=coverage/integration.xml tests/foundation/database_integration.py $(wildcard tests/*_integration.py) $(INTEGRATION_TEST_PATHS)
@@ -55,11 +57,11 @@ run: ## Run the application on loopback without rebuilding.
 .PHONY: test-integration
 test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a disposable DB.
 	$(UV) run --locked pytest tests/foundation/database_integration.py $(wildcard tests/*_integration.py) $(INTEGRATION_TEST_PATHS)
-{% endif %}{% if withDocker and withTesting %}
+{% endif %}{% if withTesting %}
 .PHONY: test-image
 test-image: ## Run installed-wheel tests in a disposable container and, when enabled, PostgreSQL.
 	@mkdir -p coverage/installed
-	docker buildx build $(DOCKER_BUILD_ARGS) $(LOCAL_BUILD_NETWORK) --target test --load --tag {{ packageName }}:test .
+	docker buildx build $(DOCKER_BUILD_ARGS) $(LOCAL_BUILD_NETWORK) --file Dockerfile{% if not withDocker %}.quality{% endif %} --target test --load --tag {{ packageName }}:test .
 	@touch coverage/installed/.started
 {% if withPersistence %}	@set -eu; project="{{ packageName }}test$$(date +%s)$$$$"; \
 	trap 'docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" down --volumes --remove-orphans' EXIT HUP INT TERM; \

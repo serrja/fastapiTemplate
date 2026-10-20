@@ -37,7 +37,7 @@ _exclude:
   - "{% if not withTesting %}tests{% endif %}"
   - "{% if not withDocker %}Dockerfile{% endif %}"
   - "{% if not withDocker %}.dockerignore{% endif %}"
-  - "{% if not (withDocker and withPersistence and withTesting) %}compose.test.yaml{% endif %}"
+  - "{% if not (withPersistence and withTesting) %}compose.test.yaml{% endif %}"
   - "{% if not withPersistence %}tests/foundation/database_integration.py{% endif %}"
   - "{% if not withPersistence %}deploy/local{% endif %}"
   - "{% if not (withKubernetes | default(false)) %}deploy{% endif %}"

@@ -13,7 +13,6 @@ include = [
   ".github/workflows/contribution.yml",
   "docker/coverage_report.py",
   "docker/quality.mk", "docker/source_identity.sh", "_meta/python-name-validator.jinja", "docker/release.py", "docs/development.md.jinja", "docs/versioning.md.jinja", "docs/releases.md.jinja",
-  "Dockerfile.quality",
   ".copier-answers.yml.jinja",
   ".editorconfig",
   ".gitignore",

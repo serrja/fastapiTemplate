@@ -235,3 +235,52 @@ def test_generated_host_image_command_selects_application_tag(
     assert command[command.index("--tag") + 1] == "sampleapi:candidate"
     assert command[command.index("--target") + 1] == "runtime"
     assert "--load" in command
+
+
+@pytest.mark.parametrize("runtime_docker", [False, True])
+@pytest.mark.parametrize("persistence", [False, True])
+def test_generated_quality_inputs_do_not_depend_on_runtime_delivery(
+    tmp_path: Path, runtime_docker: bool, persistence: bool
+) -> None:
+    """Every supported runtime choice keeps its real Docker quality inputs."""
+    source = tmp_path / "source"
+    source.mkdir()
+    shutil.copy2(ROOT / "copier.yml", source / "copier.yml")
+    shutil.copytree(ROOT / "template", source / "template")
+    _git(source, "init", "--quiet")
+    revision = _commit(source, ("copier.yml", "template"), "quality source")
+    output = tmp_path / "application"
+    _run(
+        *COPIER,
+        "copy",
+        "--quiet",
+        "--defaults",
+        f"--vcs-ref={revision}",
+        str(source),
+        str(output),
+        "-d",
+        "projectName=sampleApi",
+        "-d",
+        f"withPersistence={str(persistence).lower()}",
+        "-d",
+        f"withDocker={str(runtime_docker).lower()}",
+        "-d",
+        "withCi=false",
+    )
+    _git(output, "init", "--quiet")
+    selected = "Dockerfile" if runtime_docker else "Dockerfile.quality"
+    settings = _run(
+        "make",
+        "--silent",
+        "--eval=print-quality:;@echo $(QUALITY_DOCKERFILE) $(BUILD_DOCKERFILE)",
+        "print-quality",
+        cwd=output,
+    )
+    assert settings == f"{selected} {selected}"
+    recipe = (output / selected).read_text()
+    assert "AS quality" in recipe and "get.helm.sh/helm-" in recipe
+    assert "AS test" in recipe and "AS artifacts" in recipe
+    assert (output / "compose.test.yaml").exists() == persistence
+    assert (output / "Dockerfile").exists() == runtime_docker
+    acceptance = _run("make", "--dry-run", "CONTAINERIZED=1", "test-image", cwd=output)
+    assert f"--file {selected} --target test" in acceptance
