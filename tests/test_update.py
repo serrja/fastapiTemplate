@@ -285,3 +285,8 @@ def test_generated_quality_inputs_do_not_depend_on_runtime_delivery(
     assert (output / "Dockerfile").exists() == runtime_docker
     acceptance = _run("make", "--dry-run", "CONTAINERIZED=1", "test-image", cwd=output)
     assert f"--file {selected} --target test" in acceptance
+    offline = _run(
+        "make", "--dry-run", "CONTAINERIZED=1", "OFFLINE=1", "test-image", cwd=output
+    )
+    assert "docker buildx" not in offline
+    assert "docker compose" in offline or "docker run --pull=never" in offline

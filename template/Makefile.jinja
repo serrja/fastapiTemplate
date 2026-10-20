@@ -1,12 +1,19 @@
 {% extends baseMakefileTemplate | default("template/_base/Makefile.jinja") %}
 {% block dockerSettings %}{{ super() }}
 QUALITY_RUN_ARGS += --env TEST_DATABASE_URL --env DATABASE_URL
-{% if withPersistence and withTesting %}QUALITY_TEST_COMMAND = $(MAKE) source-tests QUALITY_TEST="$(QUALITY_TEST)"
+INSTALLED_TEST_IMAGE := {{ packageName }}:test
+{% if withPersistence and withTesting %}OFFLINE_PREFLIGHT_COMMAND = $(MAKE) python-offline-preflight database-offline-preflight
+.PHONY: database-offline-preflight
+database-offline-preflight:
+	@images="$$(docker compose --env-file /dev/null -f compose.test.yaml config --images)" || exit 2; \
+	  test -n "$$images" || exit 2; \
+	  printf "%s\n" "$$images" | while IFS= read -r image; do docker image inspect "$$image" >/dev/null || { echo "BLOCKED: prepare the Compose images online first." >&2; exit 2; }; done
+QUALITY_TEST_COMMAND = $(MAKE) source-tests QUALITY_TEST="$(QUALITY_TEST)"
 .PHONY: source-tests
 source-tests: ## Run source checks against a unique disposable Compose database.
 	@set -eu; project="{{ packageName }}source$$(date +%s)$$$$"; \
 	trap 'docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" down --volumes --remove-orphans' EXIT HUP INT TERM; \
-	TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" QUALITY_TEST="$(QUALITY_TEST)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up --abort-on-container-exit --exit-code-from quality quality
+	UV_OFFLINE="$(if $(filter 1,$(OFFLINE)),true,false)" TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" QUALITY_TEST="$(QUALITY_TEST)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up $(if $(filter 1,$(OFFLINE)),--pull never,) --abort-on-container-exit --exit-code-from quality quality
 {% endif %}
 .PHONY: run
 run:
@@ -24,7 +31,7 @@ BUILD_DOCKERFILE := $(QUALITY_DOCKERFILE)
 {% if withDocker %}RUNTIME_IMAGE := {{ packageName }}:candidate
 {% else %}IMAGE_COMMAND = printf "%s\n" "notApplicable: runtime delivery disabled for this render"
 {% endif %}
-VERIFY_COMMAND = $(MAKE) CONTAINERIZED=1 test-image && $(QUALITY_RUN) python docker/coverage_report.py coverage/installed/coverage.json --after coverage/installed/.started --output coverage/installed/summary.md
+VERIFY_COMMAND = $(if $(filter 1,$(OFFLINE)),$(OFFLINE_PREFLIGHT_COMMAND) &&,) $(MAKE) CONTAINERIZED=1 test-image && $(QUALITY_RUN) python docker/coverage_report.py coverage/installed/coverage.json --after coverage/installed/.started --output coverage/installed/summary.md
 verify: quality-image
 {% if withDocker and withKubernetes %}.PHONY: chart deploy-local undeploy-local
 deploy-local undeploy-local:
@@ -61,13 +68,17 @@ test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a d
 .PHONY: test-image
 test-image: ## Run installed-wheel tests in a disposable container and, when enabled, PostgreSQL.
 	@mkdir -p coverage/installed
+ifneq ($(OFFLINE),1)
 	docker buildx build $(DOCKER_BUILD_ARGS) $(LOCAL_BUILD_NETWORK) --file Dockerfile{% if not withDocker %}.quality{% endif %} --target test --load --tag {{ packageName }}:test .
+endif
 	@touch coverage/installed/.started
 {% if withPersistence %}	@set -eu; project="{{ packageName }}test$$(date +%s)$$$$"; \
 	trap 'docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" down --volumes --remove-orphans' EXIT HUP INT TERM; \
-	TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up --abort-on-container-exit --exit-code-from tests tests
-{% else %}	docker run --rm --read-only --network none --tmpfs /tmp:rw,noexec,nosuid,size=64m --user "$$(id -u):$$(id -g)" --mount type=bind,source="$$(pwd)/coverage/installed",target=/checks/coverage {{ packageName }}:test
-{% endif %}{% endif %}{% if withKubernetes %}
+	UV_OFFLINE="$(if $(filter 1,$(OFFLINE)),true,false)" TEST_UID="$$(id -u)" TEST_GID="$$(id -g)" docker compose --env-file /dev/null -f compose.test.yaml -p "$$project" up $(if $(filter 1,$(OFFLINE)),--pull never,) --abort-on-container-exit --exit-code-from tests tests
+{% else %}	docker run --pull=never --rm --read-only --network none --tmpfs /tmp:rw,noexec,nosuid,size=64m --user "$$(id -u):$$(id -g)" --mount type=bind,source="$$(pwd)/coverage/installed",target=/checks/coverage {{ packageName }}:test
+{% endif %}	@cp coverage/source.json coverage/installed/source.json
+	@docker image inspect {{ packageName }}:test --format '{% raw %}{{.Id}}{% endraw %}' > coverage/installed/test-image-id.txt
+{% endif %}{% if withKubernetes %}
 HELM ?= helm
 KIND ?= kind
 KUBECTL ?= kubectl

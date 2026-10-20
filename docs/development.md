@@ -15,3 +15,8 @@ Generated persistence-enabled projects run source tests in a unique Compose proj
 with a synthetic PostgreSQL database. Cleanup removes only that run's containers and
 volumes. `make verify` uses a separate installed-package contour. These local checks
 need Docker Compose and the pinned database image; no existing database is selected.
+
+For generated offline CI, first prepare a successful online run for the same source.
+The Python owner validates wheel/sdist and installed-image identities; persistence
+also requires the Compose images to exist locally. Offline checks reuse those bytes,
+rerun acceptance, and prohibit image pulls or dependency/build fetches.
