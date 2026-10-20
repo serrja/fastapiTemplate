@@ -272,6 +272,7 @@ def test_generated_quality_inputs_do_not_depend_on_runtime_delivery(
     settings = _run(
         "make",
         "--silent",
+        "CONTAINERIZED=0",
         "--eval=print-quality:;@echo $(QUALITY_DOCKERFILE) $(BUILD_DOCKERFILE)",
         "print-quality",
         cwd=output,
