@@ -34,7 +34,7 @@ jobs:
           tags: fastapitemplate:quality
           cache-from: type=gha,scope=${{ github.repository_id }}-maintenance-python314-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
           cache-to: type=gha,mode=max,scope=${{ github.repository_id }}-maintenance-python314-linux-amd64-${{ github.event_name == 'pull_request' && 'review' || 'trusted' }}
-      - run: make check
+      - run: make ci-local
       - name: Maintenance coverage
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

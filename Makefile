@@ -4,8 +4,15 @@ RUNTIME_IMAGE := fastapitemplate:candidate
 QUALITY_NETWORK := bridge
 QUALITY_EXTRA_TARGETS := docs-check format-check chart-check
 IMAGE_COMMAND = printf "%s\n" "notApplicable: maintenance source; runtime images belong to rendered applications"
-VERIFY_COMMAND = $(MAKE) render RENDER_OUTPUT="$(CURDIR)/.local/verified-render" RENDER_ARGS="-d projectName=verifyApi -d withTesting=false -d withCi=false"
-BUILD_COMMAND = printf "%s\n" "notApplicable: maintenance source; distributions are verified in disposable renders"
+VERIFY_COMMAND = $(QUALITY_RUN) python docker/release.py bundle-verify
+BUILD_COMMAND = $(QUALITY_RUN) python docker/release.py bundle-build
+OFFLINE_PREFLIGHT_COMMAND = true
+CI_LOCAL_TARGETS := check coverage build verify chart release-check
+VERSION_COMMAND = $(QUALITY_RUN) python -m overlay.docker.chart_release version --chart-dir overlay/deploy/chart
+RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python -m overlay.docker.chart_release release-check --chart-dir overlay/deploy/chart
+.PHONY: chart
+chart: quality-image
+	$(QUALITY_RUN) make chart
 include docker/quality-python.mk
 else
 .DEFAULT_GOAL := help
@@ -32,13 +39,14 @@ typecheck: ## Check pinned composition tooling and its suite.
 	$(UV) run --locked mypy
 
 test: ## Run real Copier updates and the canonical composition suite.
-	$(UV) run --locked pytest --cov --cov-report=term-missing --cov-report=json --cov-report=xml
+	$(UV) run --locked pytest --junitxml=coverage/junit.xml --cov --cov-report=term-missing --cov-report=json --cov-report=xml
 
 compose: ## Verify and assemble the pinned parent with the FastAPI overlay.
 	$(UV) run --locked python tools/compose_template.py --repo . --smoke
 
 chart: ## Package the shared deployment chart without publishing it.
-	$(HELM) package overlay/deploy/chart --destination dist
+	$(HELM) package overlay/deploy/chart --destination dist/charts
+	$(UV) run --locked python -m overlay.docker.chart_release capture --chart-dir overlay/deploy/chart
 
 chart-check: ## Validate the chart's accepted and rejected configurations.
 	HELM=$(HELM) $(UV) run --locked pytest tests/chart_contract.py

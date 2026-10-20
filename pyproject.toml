@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-template-maintenance"
-version = "0.3.0.dev0"
+version = "0.3.0.dev1"
 license = "MIT"
 license-files = ["LICENSE", "LICENSES/*", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.12"
@@ -11,6 +11,7 @@ dev = [
     "copier==9.17.2",
     "mypy>=2.3,<3",
     "pydantic>=2.12,<3",
+    "packaging>=25,<27",
     "pytest>=9,<10",
     "pytest-cov>=7,<8",
     "PyYAML>=6,<7",

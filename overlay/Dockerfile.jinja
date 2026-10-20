@@ -4,6 +4,7 @@ ARG PYTHON_IMAGE={{ pythonImage | default('python:3.12.14-slim-bookworm@sha256:3
 {% block extraBuildStages %}{% endblock %}FROM ghcr.io/astral-sh/uv:0.12.15@sha256:62f8c047d0a0e9ece6b53fc63df902585a67a47a7f318ddec4a37db586edc8e3 AS uv
 
 FROM ${PYTHON_IMAGE} AS base
+ARG TARGETPLATFORM
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -16,14 +17,14 @@ COPY pyproject.toml uv.lock README.md .gitignore THIRD_PARTY_NOTICES.md ./
 COPY LICENSES ./LICENSES
 {% if licensePolicy | default('unlicensed') == 'MIT' %}COPY LICENSE ./
 {% endif %}
-{% block dependencyAcquisition %}RUN --mount=type=cache,id=uv-runtime,target=/root/.cache/uv,sharing=locked \
+{% block dependencyAcquisition %}RUN --mount=type=cache,id={{ packageName }}-runtime-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked \
     uv sync --locked --no-dev --no-install-project
 {% endblock %}
 FROM dependencies AS wheel-builder
-{% block testDependencies %}RUN --mount=type=cache,id=uv-development,target=/root/.cache/uv,sharing=locked \
+{% block testDependencies %}RUN --mount=type=cache,id={{ packageName }}-development-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked \
     uv sync --locked --all-groups --no-install-project
 {% endblock %}COPY src ./src
-RUN --mount=type=cache,id=uv-build,target=/root/.cache/uv,sharing=locked \
+RUN --mount=type=cache,id={{ packageName }}-build-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked \
     uv build --no-build-isolation --wheel --sdist --out-dir /dist
 
 FROM wheel-builder AS quality

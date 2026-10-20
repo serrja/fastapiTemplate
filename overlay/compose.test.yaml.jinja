@@ -30,3 +30,26 @@ services:
       - >-
         python -m coverage run -m pytest tests/foundation/database_integration.py tests/*_integration.py -p no:cacheprovider
         && python -m pytest --cov --cov-append --cov-report=term-missing --cov-report=json --cov-report=xml -p no:cacheprovider
+
+  quality:
+    image: {{ packageName }}:quality
+    pull_policy: never
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    user: "${TEST_UID:-65532}:${TEST_GID:-65532}"
+    tmpfs:
+      - /tmp:rw,exec,mode=1777,size=512m
+    volumes:
+      - ./coverage:/app/coverage
+    environment:
+      TEST_DATABASE_URL: postgresql+asyncpg://foundation:synthetic-test-only@database:5432/foundation
+      UV_NO_SYNC: "1"
+      UV_CACHE_DIR: /tmp/uv
+      RUFF_CACHE_DIR: /tmp/ruff
+      MYPY_CACHE_DIR: /tmp/mypy
+      PYTHONPYCACHEPREFIX: /tmp/pycache
+      COVERAGE_FILE: /app/coverage/.coverage
+      PYTEST_ADDOPTS: -o cache_dir=/tmp/pytest-cache
+    command: ["make", "${QUALITY_TEST:-test}"]
