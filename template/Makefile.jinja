@@ -2,6 +2,15 @@
 {% block dockerSettings %}{{ super() }}
 QUALITY_RUN_ARGS += --env TEST_DATABASE_URL --env DATABASE_URL
 INSTALLED_TEST_IMAGE := {{ packageName }}:test
+# Keep prior rollback artifacts; every checked source owns a separate directory.
+PYTHON_ARTIFACT_DIR = dist/$(shell sed -n 's/.*"contentSha256":"\([a-f0-9]*\)".*/\1/p' $(REPORT_DIR)/source.json)
+ifeq ($(OFFLINE),1)
+BUILD_COMMAND = $(RELEASE_CHECK_COMMAND)
+else
+BUILD_COMMAND = $(DOCKER) buildx build --file $(BUILD_DOCKERFILE) $(DOCKER_BUILD_ARGS) $(LOCAL_BUILD_NETWORK) --target $(ARTIFACT_TARGET) --output type=local,dest=$(PYTHON_ARTIFACT_DIR) .
+endif
+BUILD_RECEIPT_COMMAND = $(QUALITY_RUN) python docker/release.py capture-build --artifact-dir "$(PYTHON_ARTIFACT_DIR)"
+RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python docker/release.py release-check --artifact-dir "$(PYTHON_ARTIFACT_DIR)"
 {% if withPersistence and withTesting %}OFFLINE_PREFLIGHT_COMMAND = $(MAKE) python-offline-preflight database-offline-preflight
 .PHONY: database-offline-preflight
 database-offline-preflight:
@@ -21,10 +30,10 @@ run:
 {% if withKubernetes %}QUALITY_EXTRA_TARGETS := chart-check
 CI_LOCAL_TARGETS := check coverage build verify chart release-check
 VERSION_COMMAND = $(QUALITY_RUN) python -m docker.chart_release version
-RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python -m docker.chart_release release-check
+RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python -m docker.chart_release release-check --artifact-dir "$(PYTHON_ARTIFACT_DIR)"
 .PHONY: chart
 chart: quality-image
-	$(QUALITY_RUN) make chart
+	$(QUALITY_RUN) make chart ARTIFACT_DIR="$(PYTHON_ARTIFACT_DIR)"
 {% endif %}
 QUALITY_DOCKERFILE := Dockerfile{% if not withDocker %}.quality{% endif %}
 BUILD_DOCKERFILE := $(QUALITY_DOCKERFILE)
@@ -79,6 +88,7 @@ endif
 {% endif %}	@cp coverage/source.json coverage/installed/source.json
 	@docker image inspect {{ packageName }}:test --format '{% raw %}{{.Id}}{% endraw %}' > coverage/installed/test-image-id.txt
 {% endif %}{% if withKubernetes %}
+ARTIFACT_DIR ?= dist
 HELM ?= helm
 KIND ?= kind
 KUBECTL ?= kubectl
@@ -88,8 +98,8 @@ KIND_IMAGE := kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a2659
 .PHONY: chart chart-check
 check: chart-check
 chart: ## Package the managed shared chart as a deployable artifact.
-	$(HELM) package deploy/chart --destination dist/charts --app-version "$$($(UV) run --locked python -m docker.chart_release app-version)"
-	$(UV) run --locked python -m docker.chart_release capture
+	$(HELM) package deploy/chart --destination "$(ARTIFACT_DIR)/charts" --app-version "$$($(UV) run --locked python -m docker.chart_release app-version)"
+	$(UV) run --locked python -m docker.chart_release capture --artifact-dir "$(ARTIFACT_DIR)"
 
 chart-check: ## Check chart templates and schema with explicit validation-only values.
 	$(HELM) lint deploy/chart --strict --set image.repository=validation.invalid/application --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

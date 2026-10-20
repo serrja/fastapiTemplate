@@ -42,9 +42,9 @@ def metadata(chart_dir: Path) -> dict[str, Any]:
     }
 
 
-def artifact(chart_dir: Path) -> release.Artifact:
+def artifact(chart_dir: Path, artifact_dir: Path) -> release.Artifact:
     expected = metadata(chart_dir)["chart"]
-    path = Path("dist/charts") / f"{expected['name']}-{expected['version']}.tgz"
+    path = artifact_dir / "charts" / f"{expected['name']}-{expected['version']}.tgz"
     with tarfile.open(path, "r:gz") as archive:
         member = archive.extractfile(f"{expected['name']}/Chart.yaml")
         if member is None:
@@ -72,9 +72,12 @@ def app_version(
 
 
 @app.command("capture")
-def capture(chart_dir: Annotated[Path, typer.Option()] = Path("deploy/chart")) -> None:
+def capture(
+    chart_dir: Annotated[Path, typer.Option()] = Path("deploy/chart"),
+    artifact_dir: Annotated[Path, typer.Option()] = Path("dist"),
+) -> None:
     evidence = release.BuildEvidence(
-        source=release.source(), artifacts=[artifact(chart_dir)]
+        source=release.source(), artifacts=[artifact(chart_dir, artifact_dir)]
     )
     release.write_json(
         release.REPORTS / "chart-build.json", evidence.model_dump(by_alias=True)
@@ -82,12 +85,15 @@ def capture(chart_dir: Annotated[Path, typer.Option()] = Path("deploy/chart")) -
 
 
 @app.command("release-check")
-def check(chart_dir: Annotated[Path, typer.Option()] = Path("deploy/chart")) -> None:
-    release.release_check()
+def check(
+    chart_dir: Annotated[Path, typer.Option()] = Path("deploy/chart"),
+    artifact_dir: Annotated[Path, typer.Option()] = Path("dist"),
+) -> None:
+    release.release_check(artifact_dir=artifact_dir)
     evidence = release.BuildEvidence.model_validate_json(
         (release.REPORTS / "chart-build.json").read_text()
     )
-    current = artifact(chart_dir)
+    current = artifact(chart_dir, artifact_dir)
     if (
         evidence.source.content_sha256 != release.source().content_sha256
         or evidence.artifacts != [current]

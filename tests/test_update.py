@@ -290,3 +290,31 @@ def test_generated_quality_inputs_do_not_depend_on_runtime_delivery(
     )
     assert "docker buildx" not in offline
     assert "docker compose" in offline or "docker run --pull=never" in offline
+
+    reports = output / "coverage"
+    reports.mkdir()
+    (reports / "source.json").write_text('{"contentSha256":"' + "a" * 64 + '"}')
+    artifact_dir = "dist/" + "a" * 64
+    commands = _run(
+        "make",
+        "--silent",
+        "CONTAINERIZED=0",
+        (
+            "--eval=print-artifacts:;@printf '%s\\n' '$(BUILD_COMMAND)' "
+            "'$(BUILD_RECEIPT_COMMAND)' '$(RELEASE_CHECK_COMMAND)'"
+        ),
+        "print-artifacts",
+        cwd=output,
+    )
+    assert commands.count(artifact_dir) == 3
+    assert f"dest={artifact_dir}" in commands
+    chart = _run(
+        "make",
+        "--dry-run",
+        "CONTAINERIZED=1",
+        f"ARTIFACT_DIR={artifact_dir}",
+        "chart",
+        cwd=output,
+    )
+    assert f'--destination "{artifact_dir}/charts"' in chart
+    assert f'--artifact-dir "{artifact_dir}"' in chart

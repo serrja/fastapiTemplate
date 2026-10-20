@@ -20,3 +20,7 @@ For generated offline CI, first prepare a successful online run for the same sou
 The Python owner validates wheel/sdist and installed-image identities; persistence
 also requires the Compose images to exist locally. Offline checks reuse those bytes,
 rerun acceptance, and prohibit image pulls or dependency/build fetches.
+
+Generated HTTP applications export wheel, sdist and chart to
+`dist/<source-content-sha256>/`. Build capture, release checks and offline reuse
+select that same directory, preserving previous artifacts for rollback.

@@ -4,12 +4,18 @@ FastAPI foundation with process health routes. Product operations belong to this
 
 ## Run and verify
 
+`make ci-local` runs applicable source, installed-package and artifact checks once.
+`make version` reads application and chart metadata; `make release-check` validates
+the built outputs. Wheel, sdist and chart share `dist/<source-content-sha256>/`,
+so previous rollback artifacts remain intact. After a successful online run,
+`make ci-local OFFLINE=1` validates prepared inputs and runs fresh checks.
+
 The canonical quality/build path uses Git, Make and Docker. Resolve and commit `uv.lock` once after a fresh render; existing checkouts enforce it. A native Python/uv loop is optional.
 
 ```bash
 uv lock
 make install
-make CONTAINERIZED=1 run
+make run
 ```
 
 `create_app` reads validated settings when called. Imports do not connect to the network. `GET /health/live` checks the process; `/health/ready` checks enabled required resources.{% if withPersistence %} Set `DATABASE_URL` to a `postgresql+asyncpg://` URL before normal startup. Migrations never run during application startup.{% else %} No DSN or credentials are needed.{% endif %}
