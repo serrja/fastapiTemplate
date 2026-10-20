@@ -16,7 +16,7 @@
     ".github/workflows/release.yml.jinja": "197d73a00aae0753dc4df62399819b4a98eec209af5029c1e78b28bfe4af8532",
     ".gitignore": "732f5ce68b4b13ef900931ca4a47ef00acffa7cdb7b699feb0e8a8d7ac719d82",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "724ea3c01b2546b40e5f4a05ee325fe5c78d78bc899d89b4d05429aa2befd8a0",
+    ".template-source.json": "28756eaf1501ce6a992f246e1342c2f408a79f8acfe4498d0d7aed7fb907c24e",
     "AGENTS.md.jinja": "c22b27fcab3d4a887f8adbf26cd6b9c45c2d17fcc7ab1cd174573bc9e465091e",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
     "Dockerfile.jinja": "33b30fb2327068c9dac041e64787c50a79e720b3ec8c7ea33c6202f84f8adfc7",
@@ -24,7 +24,7 @@
     "Dockerfile.quality.dockerignore": "b33c067b012b6ac670c6876493bb0ab63f68e4fb7c0722c35197e0e9161897d5",
     "LICENSE.jinja": "6cf866f34ac5be3c44e2749f192b6c067e3b4fe791dafe781a44d564d7a96986",
     "LICENSES/pythonTemplate-MIT.txt": "e7813a4e8912aca452d2166e5a1ef6b78fcb6d0855e309cf5a0c35591284c8b2",
-    "Makefile.jinja": "e97c7bb02f61b69787077d276e15e77c0d2aba550850c50ec70c9d928acfccef",
+    "Makefile.jinja": "ce754c942f4ff8f05f0078fecd3096c194813a1ee247c1e88100d84a32468565",
     "PROJECT.md.jinja": "d5bc786f311f73282d02270a5b97682a10559dc590c37d3dadec29975c84ee90",
     "README.md.jinja": "847f1ec706527c52f9d2f3252d117e4a7f6250522677df2f3cdc113e387adb20",
     "SERVICE.md.jinja": "d37c2c45ad049250c4c4426d22fb6df43ffe9b186d90e7b4d7d278d03938a92c",
@@ -73,7 +73,7 @@
     "tests/foundation/test_package.py.jinja": "0deb617f92fd0d99648913a29b23d536893153076350ba862f562864549b7dd0",
     "tests/test_http.py.jinja": "92c585ef106e3d1aba177aa45b6145d90d37d48cd80c0f883726669a4604bef1"
   },
-  "overlayContentSha256": "79d6b61122723eabe8d482b1fc1b11443b3d27045d4f57191279c89507fb881a",
+  "overlayContentSha256": "355e8f326e3ca3aa583c02533f77d43a42ff48a8428616317e1b02d301dbec1e",
   "owners": {
     ".copier-answers.yml.jinja": "parent",
     ".dockerignore": "overlay",
@@ -147,6 +147,6 @@
   },
   "parentContentSha256": "6bc1f02c39cc89335e11da128404d38168dbcb21d554606a190db02294200a9b",
   "schema": 1,
-  "sourceContentSha256": "c99ca2a44e323443625f091cc891e592d7338c59e51556691ccaf2b6aa614b7c",
+  "sourceContentSha256": "0e6df9d3e1d3c51e3dc6552ee6595b4c4cabf57bbea91873f73bcee9c39c5b4c",
   "templateVersion": "0.3.0.dev0"
 }

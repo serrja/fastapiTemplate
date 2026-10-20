@@ -1,6 +1,9 @@
 {% extends baseMakefileTemplate | default("template/_base/Makefile.jinja") %}
 {% block dockerSettings %}{{ super() }}
 QUALITY_RUN_ARGS += --env TEST_DATABASE_URL --env DATABASE_URL
+.PHONY: run
+run:
+	$(MAKE) CONTAINERIZED=1 run
 {% if withKubernetes %}QUALITY_EXTRA_TARGETS := docs-check format-check chart-check
 {% endif %}
 {% if withDocker %}QUALITY_DOCKERFILE := Dockerfile
@@ -34,7 +37,7 @@ HTTP_PORT ?= 8000
 UVICORN_FLAGS ?=
 
 run: ## Run the application on loopback without rebuilding.
-	$(UV) run --locked uvicorn {{ packageName }}.app:create_app --factory --host "$(HTTP_HOST)" --port "$(HTTP_PORT)" $(UVICORN_FLAGS)
+	$(UV) run --locked uvicorn {{ packageName }}.app:create_app --factory --host "$(HTTP_HOST)" --port "$(HTTP_PORT)" --no-server-header --no-access-log --log-config app_logging.json --workers 1 $(UVICORN_FLAGS)
 {% if withPersistence and withTesting %}
 .PHONY: test-integration
 test-integration: ## Verify real PostgreSQL; TEST_DATABASE_URL must point to a disposable DB.
