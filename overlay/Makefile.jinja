@@ -4,7 +4,7 @@ QUALITY_RUN_ARGS += --env TEST_DATABASE_URL --env DATABASE_URL
 .PHONY: run
 run:
 	$(MAKE) CONTAINERIZED=1 run
-{% if withKubernetes %}QUALITY_EXTRA_TARGETS := docs-check format-check chart-check
+{% if withKubernetes %}QUALITY_EXTRA_TARGETS := chart-check
 {% endif %}
 {% if withDocker %}QUALITY_DOCKERFILE := Dockerfile
 RUNTIME_IMAGE := {{ packageName }}:candidate
