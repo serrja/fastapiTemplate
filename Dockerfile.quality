@@ -10,13 +10,14 @@ RUN curl -fsSL https://get.helm.sh/helm-v4.3.1-linux-amd64.tar.gz -o /tmp/helm.t
 WORKDIR /app
 ENV PATH=/app/.venv/bin:$PATH UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 CONTAINERIZED=1
 COPY pyproject.toml uv.lock README.md .gitignore ./
-RUN --mount=type=cache,id=python-quality-uv-314-linux-amd64,target=/root/.cache/uv,sharing=locked uv sync --locked --all-groups --no-install-project
+ARG TARGETPLATFORM
+RUN --mount=type=cache,id=fastapitemplate-quality-dependencies-uv-314-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked uv sync --locked --all-groups --no-install-project
 FROM quality-dependencies AS quality
 COPY --chmod=u=rwX,go=rX . ./
-RUN --mount=type=cache,id=python-quality-uv-314-linux-amd64,target=/root/.cache/uv,sharing=locked uv sync --locked --all-groups
+RUN --mount=type=cache,id=fastapitemplate-quality-development-uv-314-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked uv sync --locked --all-groups
 CMD ["make", "check"]
 
 FROM quality AS package-build
-RUN --mount=type=cache,id=python-quality-uv-314-linux-amd64,target=/root/.cache/uv,sharing=locked uv build --wheel --sdist --out-dir /artifacts
+RUN --mount=type=cache,id=fastapitemplate-quality-package-uv-314-${TARGETPLATFORM},target=/root/.cache/uv,sharing=locked uv build --wheel --sdist --out-dir /artifacts
 FROM scratch AS artifacts
 COPY --from=package-build /artifacts/ /

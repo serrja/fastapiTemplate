@@ -4,7 +4,7 @@ Generic FastAPI foundation assembled from a pinned `serrja/pythonTemplate` snaps
 
 ## Generate and update
 
-Install the maintenance lock with `make install`. Use an immutable reviewed template commit; `0.2.0.dev0` / answers schema 1 is a development version, not a release.
+Install the maintenance lock with `make install`. Use an immutable reviewed template commit. `make version` reads the canonical template version from `pyproject.toml`; answers schema 1 is a separate generation contract.
 
 ```bash
 uv run --locked copier copy --vcs-ref=<reviewed-commit> . /path/to/application \
@@ -80,3 +80,5 @@ and the supported worker model.
 Original additions use [MIT](LICENSE); inherited source and dependencies retain
 their [notices](THIRD_PARTY_NOTICES.md). Generated projects choose `licensePolicy`
 and their own holder/year through the common Python foundation.
+
+For this template source, use `make version` and `make ci-local`; see [development](docs/development.md), [version boundaries](docs/versioning.md), and the [shared release guide](https://github.com/serrja/baseRules/blob/main/docs/releases.md).

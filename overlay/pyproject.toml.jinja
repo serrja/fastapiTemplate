@@ -1,5 +1,5 @@
 {% extends basePyprojectTemplate | default("template/_base/pyproject.toml.jinja") %}
 {% block runtimeDependencies %}"fastapi==0.143.3", "uvicorn>=0.38,<1", "pydantic>=2.12,<3", "pydantic-settings>=2.12,<3", "prometheus-fastapi-instrumentator==8.1.0", "prometheus-client==0.26.0"{% if withPersistence %}, "sqlalchemy[asyncio]>=2.0.44,<3", "asyncpg>=0.31,<1", "alembic>=1.17,<2"{% endif %}{% endblock %}
-{% block extraDevelopmentDependencies %}{% if withTesting %}, "httpx>=0.28,<1"{% endif %}{% endblock %}
+{% block extraDevelopmentDependencies %}{% if withKubernetes %}, "PyYAML>=6,<7"{% endif %}{% if withTesting %}, "httpx>=0.28,<1"{% endif %}{% endblock %}
 {% block extraMypy %}plugins = ["pydantic.mypy"]
 {% endblock %}

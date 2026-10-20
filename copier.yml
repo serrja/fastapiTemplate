@@ -13,6 +13,8 @@ _skip_if_exists:
   - "tests/database_integration.py"
   - "deploy/values.yaml"
 _exclude:
+  - "_meta"
+  - "_meta/**"
   - .vscode
   - .vscode/**
   - .serena
@@ -35,7 +37,7 @@ _exclude:
   - "{% if not withTesting %}tests{% endif %}"
   - "{% if not withDocker %}Dockerfile{% endif %}"
   - "{% if not withDocker %}.dockerignore{% endif %}"
-  - "{% if not (withDocker and withPersistence and withTesting) %}compose.test.yaml{% endif %}"
+  - "{% if not (withPersistence and withTesting) %}compose.test.yaml{% endif %}"
   - "{% if not withPersistence %}tests/foundation/database_integration.py{% endif %}"
   - "{% if not withPersistence %}deploy/local{% endif %}"
   - "{% if not (withKubernetes | default(false)) %}deploy{% endif %}"
@@ -46,6 +48,9 @@ projectName:
   validator: >-
     {%- if not projectName or not projectName.isascii() or not projectName[0].islower() or not projectName.isalnum() -%}
     Use ASCII lower camelCase, starting with a lowercase letter.
+    {%- else -%}
+    {%- set python_name = projectName | lower -%}
+    {%- include "template/_meta/python-name-validator.jinja" -%}
     {%- endif -%}
 packageName:
   type: str
