@@ -81,4 +81,4 @@ Original additions use [MIT](LICENSE); inherited source and dependencies retain
 their [notices](THIRD_PARTY_NOTICES.md). Generated projects choose `licensePolicy`
 and their own holder/year through the common Python foundation.
 
-For this template source, use `make version` and `make ci-local`; see [development](docs/development.md) and [version/release boundaries](docs/versioning.md).
+For this template source, use `make version` and `make ci-local`; see [development](docs/development.md), [version boundaries](docs/versioning.md), and the [shared release guide](https://github.com/serrja/baseRules/blob/main/docs/releases.md).
