@@ -28,7 +28,7 @@ source-tests: ## Run source checks against a unique disposable Compose database.
 run:
 	$(MAKE) CONTAINERIZED=1 run
 {% if withKubernetes %}QUALITY_EXTRA_TARGETS := chart-check
-CI_LOCAL_TARGETS := check coverage build verify chart release-check
+CI_LOCAL_TARGETS := acceptance coverage build verify chart release-check
 VERSION_COMMAND = $(QUALITY_RUN) python -m docker.chart_release version
 RELEASE_CHECK_COMMAND = $(QUALITY_RUN) python -m docker.chart_release release-check --artifact-dir "$(PYTHON_ARTIFACT_DIR)"
 .PHONY: chart
@@ -96,7 +96,7 @@ KUBECONFIG_LOCAL ?= $(CURDIR)/.local/kubeconfig
 KIND_IMAGE := kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 
 .PHONY: chart chart-check
-check: chart-check
+acceptance: chart-check
 chart: ## Package the managed shared chart as a deployable artifact.
 	$(HELM) package deploy/chart --destination "$(ARTIFACT_DIR)/charts" --app-version "$$($(UV) run --locked python -m docker.chart_release app-version)"
 	$(UV) run --locked python -m docker.chart_release capture --artifact-dir "$(ARTIFACT_DIR)"

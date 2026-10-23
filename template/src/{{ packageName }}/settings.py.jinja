@@ -24,6 +24,8 @@ class ServiceSettings(BaseSettings):
         hide_input_in_errors=True,
     )
 
+    environment: Literal["main", "dev", "test", "local"] = "local"
+
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(
         default="INFO",
         validation_alias=_LOG_LEVEL_ALIASES,
