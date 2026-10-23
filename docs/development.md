@@ -1,4 +1,4 @@
-# Developing fastApiTemplate
+# Developing fastapiTemplate
 
 The native source workflow is `make install`, `make ci-local`. Its ordered targets
 run quality/source tests once, report coverage, build a deterministic source bundle,

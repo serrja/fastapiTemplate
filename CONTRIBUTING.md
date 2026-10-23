@@ -1,4 +1,4 @@
-# Contributing to fastApiTemplate
+# Contributing to fastapiTemplate
 
 Read [AGENTS.md](AGENTS.md), [README.md](README.md) and `composition.toml`. The Python base owns shared Python tooling and composition; this repository owns the FastAPI overlay and its deployment recipe.
 
