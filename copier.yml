@@ -78,7 +78,7 @@ withTesting:
   help: "Include technical HTTP, lifecycle, and configuration tests."
 withKubernetes:
   type: bool
-  default: true
+  default: false
   help: "Include values for the shared digest-pinned Helm deployment chart."
 withCi:
   type: bool
