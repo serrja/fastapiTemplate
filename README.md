@@ -16,7 +16,7 @@ make check
 make build
 ```
 
-A fresh render resolves its first lock; existing applications commit and enforce that lock. `withDocker=false` selects the generic Docker quality/artifact recipe. `withKubernetes=false` omits deployment files. CI requires testing support. Defaults include real managed foundation tests; empty test collection is a failure.
+A fresh render resolves its first lock; existing applications commit and enforce that lock. `withDocker=false` selects the generic Docker quality/artifact recipe. Kubernetes is opt-in: the default `withKubernetes=false` omits deployment files; select `withKubernetes=true` for the Helm/Kind profile. CI requires testing support. Defaults include real managed foundation tests; empty test collection is a failure.
 
 For an existing clean application, run its supported Copier update against a reviewed commit, inspect unmerged paths, markers, `.rej`, deletions and the full diff, then run its checks. `PROJECT.md`, `SERVICE.md`, settings, historical migrations, seed tests and `deploy/values.yaml` remain application-owned. Managed tests use `tests/foundation/`; the shared chart is managed at `deploy/chart/`. A historical update test pins the actual earlier source commit.
 
