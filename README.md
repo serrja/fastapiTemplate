@@ -1,4 +1,4 @@
-# fastApiTemplate
+# fastapiTemplate
 
 Generic FastAPI foundation assembled from a pinned `serrja/pythonTemplate` snapshot. It owns HTTP/lifespan, optional PostgreSQL, installed-wheel Docker targets and the common Helm chart. Pokerlost contracts belong to the specialization.
 

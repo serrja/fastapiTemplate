@@ -1,4 +1,4 @@
-# Developing fastApiTemplate
+# Developing fastapiTemplate
 
 The native source workflow is `make install`, `make ci-local`. Its ordered targets
 run quality/source tests once, report coverage, build a deterministic source bundle,
@@ -24,3 +24,18 @@ rerun acceptance, and prohibit image pulls or dependency/build fetches.
 Generated HTTP applications export wheel, sdist and chart to
 `dist/<source-content-sha256>/`. Build capture, release checks and offline reuse
 select that same directory, preserving previous artifacts for rollback.
+
+## Runtime and execution settings
+
+The owned `overlay/src/{{ packageName }}/settings.py.jinja` binds
+`ServiceSettings.environment` to `<PROJECT>_RUNTIME_ENVIRONMENT` with the closed
+values `main`, `dev`, `test`, and `local`. The existing telemetry input
+`<PROJECT>_ENVIRONMENT` keeps `local`, `dev`, `ci`, and `remote`. Both default to
+`local`; Python constructors retain `environment=...`. There is no automatic mapping
+between deployment and execution identities, or any HTTP wire change.
+
+The managed settings regressions run against real Pydantic sources in both
+persistence profiles, using temporary dotenv/secret fixtures and no database
+connection. Existing applications own their settings; review that owner contract
+explicitly when updating the template. Keep the environment assertion tests with
+the corresponding model binding.
