@@ -1,0 +1,222 @@
+"""Managed regressions for independent runtime and execution-contour inputs."""
+
+from __future__ import annotations
+
+import json
+import logging
+import socket
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+
+from {{ packageName }} import observability
+from {{ packageName }}.settings import ServiceSettings
+
+EXECUTION = ["local", "dev", "ci", "remote"]
+DEPLOYMENT = ["main", "dev", "test", "local"]
+PREFIX = "{{ projectName | upper }}_"
+DSN = "postgresql+asyncpg://synthetic:synthetic@127.0.0.1:1/not_connected"
+
+
+@pytest.fixture
+def context(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    for key in [
+        PREFIX + "ENVIRONMENT",
+        PREFIX + "RUNTIME_ENVIRONMENT",
+        PREFIX + "LOGLEVEL",
+        PREFIX + "LOG_LEVEL",
+        PREFIX + "DATABASE_URL",
+        "DATABASE_URL",
+        "ENVIRONMENT",
+        "RUNTIME_ENVIRONMENT",
+        "ANOTHERSERVICE_RUNTIME_ENVIRONMENT",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    def reject_network(*args, **kwargs):
+        raise AssertionError("Settings validation attempted network I/O")
+
+    monkeypatch.setattr(socket.socket, "connect", reject_network)
+{% if withPersistence %}    options = {"database_url": DSN}
+{% else %}    options: dict[str, str] = {}
+{% endif %}    return ServiceSettings, observability, options
+
+
+@pytest.mark.parametrize("execution", EXECUTION)
+@pytest.mark.parametrize("deployment", DEPLOYMENT)
+def test_all_sixteen_independent_pairs(context, monkeypatch, execution, deployment):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", execution)
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", deployment)
+    assert runtime(_env_file=None, **options).environment == deployment
+    assert telemetry.ObservabilitySettings(_env_file=None).environment == execution
+
+
+@pytest.mark.parametrize("execution", EXECUTION)
+def test_old_telemetry_modes_do_not_select_runtime(context, monkeypatch, execution):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", execution)
+    assert runtime(_env_file=None, **options).environment == "local"
+    assert telemetry.ObservabilitySettings(_env_file=None).environment == execution
+
+
+@pytest.mark.parametrize("deployment", DEPLOYMENT)
+def test_runtime_modes_do_not_select_telemetry(context, monkeypatch, deployment):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", deployment)
+    assert runtime(_env_file=None, **options).environment == deployment
+    assert telemetry.ObservabilitySettings(_env_file=None).environment == "local"
+
+
+def test_constructor_priority_and_serialization(context, monkeypatch):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", "ci")
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", "dev")
+    value = runtime(_env_file=None, environment="main", **options)
+    assert value.environment == "main"
+    assert value.model_dump()["environment"] == "main"
+    assert value.model_dump(by_alias=True)["environment"] == "main"
+    assert telemetry.ObservabilitySettings(_env_file=None).environment == "ci"
+
+
+def test_explicit_constructor_alias_and_telemetry_constructor(context):
+    runtime, telemetry, options = context
+    assert (
+        runtime(**{PREFIX + "RUNTIME_ENVIRONMENT": "test"}, **options).environment
+        == "test"
+    )
+    for execution in EXECUTION:
+        assert (
+            telemetry.ObservabilitySettings(environment=execution).environment
+            == execution
+        )
+
+
+def test_native_source_precedence(context, monkeypatch, tmp_path):
+    runtime, _, options = context
+    dotenv = tmp_path / "synthetic.env"
+    dotenv.write_text(PREFIX + "RUNTIME_ENVIRONMENT=test\n")
+    secret = tmp_path / "synthetic-secrets"
+    secret.mkdir()
+    (secret / (PREFIX + "RUNTIME_ENVIRONMENT")).write_text("dev")
+    selected = dict(_env_file=dotenv, _secrets_dir=secret, **options)
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", "ci")
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", "main")
+    assert runtime(environment="local", **selected).environment == "local"
+    assert runtime(**selected).environment == "main"
+    monkeypatch.delenv(PREFIX + "RUNTIME_ENVIRONMENT")
+    assert runtime(**selected).environment == "test"
+    dotenv.write_text("")
+    assert runtime(**selected).environment == "dev"
+
+
+@pytest.mark.parametrize("execution", ["ci", "remote"])
+@pytest.mark.parametrize("source", ["dotenv", "secret"])
+def test_legacy_external_sources_only_set_telemetry(
+    context, tmp_path, execution, source
+):
+    runtime, telemetry, options = context
+    if source == "dotenv":
+        file = tmp_path / "synthetic.env"
+        file.write_text(PREFIX + "ENVIRONMENT=" + execution + "\n")
+        selected = {"_env_file": file}
+    else:
+        directory = tmp_path / "synthetic-secrets"
+        directory.mkdir()
+        (directory / (PREFIX + "ENVIRONMENT")).write_text(execution)
+        selected = {"_secrets_dir": directory}
+    assert runtime(**selected, **options).environment == "local"
+    assert telemetry.ObservabilitySettings(**selected).environment == execution
+
+
+@pytest.mark.parametrize("value", ["ci", "remote", "SYNTHETIC_BAD_RUNTIME"])
+@pytest.mark.parametrize("source", ["init", "env", "dotenv", "secret"])
+def test_invalid_runtime_sources_fail_safely(
+    context, monkeypatch, tmp_path, value, source
+):
+    runtime, _, options = context
+    selected = dict(options)
+    if source == "init":
+        selected["environment"] = value
+    elif source == "env":
+        monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", value)
+    elif source == "dotenv":
+        file = tmp_path / "synthetic.env"
+        file.write_text(PREFIX + "RUNTIME_ENVIRONMENT=" + value + "\n")
+        selected["_env_file"] = file
+    else:
+        directory = tmp_path / "synthetic-secrets"
+        directory.mkdir()
+        (directory / (PREFIX + "RUNTIME_ENVIRONMENT")).write_text(value)
+        selected["_secrets_dir"] = directory
+    with pytest.raises(ValidationError) as error:
+        runtime(**selected)
+    assert "SYNTHETIC_BAD_RUNTIME" not in str(error.value)
+
+
+@pytest.mark.parametrize("value", [None, True, 0])
+def test_nonstrings_do_not_become_runtime_names(context, value):
+    runtime, _, options = context
+    with pytest.raises(ValidationError):
+        runtime(environment=value, **options)
+
+
+@pytest.mark.parametrize("value", ["main", "test"])
+def test_invalid_telemetry_is_not_automatically_mapped(context, monkeypatch, value):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", value)
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", value)
+    assert runtime(**options).environment == value
+    with pytest.raises(ValidationError):
+        telemetry.ObservabilitySettings()
+
+
+@pytest.mark.parametrize("alias", ["LOGLEVEL", "LOG_LEVEL"])
+def test_old_log_aliases_and_constructor_precedence(context, monkeypatch, alias):
+    runtime, _, options = context
+    monkeypatch.setenv(PREFIX + alias, "DEBUG")
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", "remote")
+    assert runtime(**options).log_level == "DEBUG"
+    assert runtime(log_level="WARNING", **options).log_level == "WARNING"
+
+
+def test_unprefixed_foreign_and_implicit_dotenv_are_ignored(context, monkeypatch):
+    runtime, telemetry, options = context
+    monkeypatch.setenv("ENVIRONMENT", "SYNTHETIC_FOREIGN")
+    monkeypatch.setenv("RUNTIME_ENVIRONMENT", "SYNTHETIC_FOREIGN")
+    monkeypatch.setenv("ANOTHERSERVICE_RUNTIME_ENVIRONMENT", "SYNTHETIC_FOREIGN")
+    Path(".env").write_text(PREFIX + "RUNTIME_ENVIRONMENT=main\n")
+    assert runtime(**options).environment == "local"
+    assert telemetry.ObservabilitySettings().environment == "local"
+    assert telemetry.ObservabilitySettings().metrics_enabled is True
+
+
+def test_database_aliases_and_validation_remain_unchanged(context, monkeypatch):
+    runtime, _, options = context
+    if options:
+        with pytest.raises(ValidationError):
+            runtime()
+        monkeypatch.setenv(PREFIX + "DATABASE_URL", DSN)
+        assert runtime().database_url.get_secret_value() == DSN
+        monkeypatch.delenv(PREFIX + "DATABASE_URL")
+        monkeypatch.setenv("DATABASE_URL", DSN)
+        assert runtime().database_url.get_secret_value() == DSN
+        with pytest.raises(ValidationError):
+            runtime(database_url="sqlite://synthetic")
+    else:
+        assert "database_url" not in runtime.model_fields
+
+
+@pytest.mark.parametrize("execution", EXECUTION)
+def test_native_request_formatter_retains_execution_contour(
+    context, monkeypatch, execution
+):
+    runtime, telemetry, options = context
+    monkeypatch.setenv(PREFIX + "ENVIRONMENT", execution)
+    monkeypatch.setenv(PREFIX + "RUNTIME_ENVIRONMENT", "main")
+    assert runtime(**options).environment == "main"
+    formatter = telemetry.RequestFormatter()
+    record = logging.LogRecord("probe", logging.INFO, __file__, 1, "probe", (), None)
+    assert json.loads(formatter.format(record))["environment"] == execution
