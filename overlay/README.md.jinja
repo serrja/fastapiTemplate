@@ -5,8 +5,8 @@ FastAPI foundation with process health routes. Product operations belong to this
 ## Run and verify
 
 `make ci-local` runs applicable source, installed-package and artifact checks once.
-`make version` reads application and chart metadata; `make release-check` validates
-the built outputs. Wheel, sdist and chart share `dist/<source-content-sha256>/`,
+`make version` reads application{% if withKubernetes %} and chart{% endif %} metadata; `make release-check` validates
+the built outputs. Wheel and sdist{% if withKubernetes %}, plus the chart,{% endif %} share `dist/<source-content-sha256>/`,
 so previous rollback artifacts remain intact. After a successful online run,
 `make ci-local OFFLINE=1` validates prepared inputs and runs fresh checks.
 

@@ -2,15 +2,38 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AliasChoices, Field{% if withPersistence %}, SecretStr, field_validator{% endif %}
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic.fields import FieldInfo
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 _LOG_LEVEL_ALIASES = AliasChoices(
     "{{ projectName | upper }}_LOGLEVEL",
     "{{ projectName | upper }}_LOG_LEVEL",
 )
+
+
+class _RuntimeEnvironmentSource(PydanticBaseSettingsSource):
+    """Keep an execution-contour fallback out of runtime configuration."""
+
+    def __init__(self, source: PydanticBaseSettingsSource) -> None:
+        super().__init__(source.settings_cls)
+        self._source = source
+
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
+        return self._source.get_field_value(field, field_name)
+
+    def __call__(self) -> dict[str, Any]:
+        values = dict(self._source())
+        values.pop("environment", None)
+        return values
 
 
 class ServiceSettings(BaseSettings):
@@ -24,7 +47,26 @@ class ServiceSettings(BaseSettings):
         hide_input_in_errors=True,
     )
 
-    environment: Literal["main", "dev", "test", "local"] = "local"
+    environment: Literal["main", "dev", "test", "local"] = Field(
+        default="local", validation_alias="{{ projectName | upper }}_RUNTIME_ENVIRONMENT"
+    )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Preserve constructor priority and separate external runtime inputs."""
+        return (
+            init_settings,
+            _RuntimeEnvironmentSource(env_settings),
+            _RuntimeEnvironmentSource(dotenv_settings),
+            _RuntimeEnvironmentSource(file_secret_settings),
+        )
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(
         default="INFO",
