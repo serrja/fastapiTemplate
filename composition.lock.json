@@ -1,6 +1,6 @@
 {
   "answersSchema": 1,
-  "configurationSha256": "b1aec06b0bcf80db4c1baf1f6d55e5a529a54df56909001430c0f4b6952c0c52",
+  "configurationSha256": "b8b9952d07501e1cb35fb94a89e8ae7ff1e787f3cdb5edac3a0f8df36a79dd98",
   "copierConfigurationSha256": "5ecf6d63a262253cd9687e0eb48dea23adaf8918b9fd4d2b23a59a2dae799b93",
   "files": {
     ".copier-answers.yml.jinja": "4714ab805f141292e2d772077378c94470e1283f6a2b60e5791cd03122513726",
@@ -16,7 +16,7 @@
     ".github/workflows/release.yml.jinja": "fce9e0563e8414bae7371391ab24da296bebdeb2d2701185451238e2f32a141c",
     ".gitignore": "732f5ce68b4b13ef900931ca4a47ef00acffa7cdb7b699feb0e8a8d7ac719d82",
     ".pre-commit-config.yaml": "ce876c91a3925b76317a9875c15d344f78e3be9936662ac8b0c64f224f6f98da",
-    ".template-source.json": "bed732eca1f4798026aa550542faa8599bc9d4b3b178e49a3b65903184072d74",
+    ".template-source.json": "d5b7208cb9d7ea69740600d8c16e3d3a3f1729d2bd89fd4c866a5d4899679848",
     ".template-version.json.jinja": "73bb256def541d2da8cb693c0dcaa162a4ec1c20f030ca8cfcc517508284f193",
     "AGENTS.md.jinja": "612d984710ee6949736d92db3e6badcdf0e532f9a036c28741ccd21fbe38b799",
     "CONTRIBUTING.md.jinja": "39f64fcbbfb3a32064069bbaefdb7b50e88f3dd59345fe5d24dbe0e5674baa11",
@@ -51,13 +51,14 @@
     "deploy/values.yaml.jinja": "1a8d3d2046bc98a8ef26ffeee4125f2c4b1fb3e750d74578848f8c148b734cb5",
     "docker/chart_release.py": "fae9b252e9565b261b6a526e71b151eb48851bd4647cfc1290863fe7b97c2c1a",
     "docker/coverage_report.py": "75c5b398842ae3199da118ef5c15ce9616c3b6de921de98056bdcb1744e4c85e",
+    "docker/python_release.py": "26aee92df4657dbaab549ef3bbebf03c8a4a75b1885b5397e58cb5dc7672cd2a",
     "docker/quality-python.mk": "afaa03ffed1fff8462c9b9d5d86ee13625d49c82d65c303c42a24a09a6ac2d8a",
     "docker/quality.mk": "31f2a873741ca440de1d021e7c767dc0069c56c62ce6b859b944cc437ce098c1",
     "docker/release.py": "ef33daf8b9b2ddeb32125b8128932417fedaf85f390ff5124c48bb5b923b2c0d",
     "docker/source_identity.sh": "efe087bf133fc2c4c9a02ee4a3935e77d4a39ded3b14387c3dde0d90ef25ecc7",
     "docs/architecture.md.jinja": "f9825b91cf372f6d3545c5ec9d2e99522bda026d19fe8eecbeeb6685b7adcdcb",
     "docs/development.md.jinja": "fb043757264e62efe5550d12415844f1c1b7dc365fe609470ca69622cac3de8f",
-    "docs/releases.md.jinja": "5e5db440ebe34198ac21254d127a6035d8b0e335ed9471d28cc3035d371567de",
+    "docs/releases.md.jinja": "474ea0215b6bfc2e1cad1f035f688eb326e2c6865a051cb9b68fefc5c55bc004",
     "docs/versioning.md.jinja": "bd58f2f07f6e7e153595314aad82cc8a5ad015e5aa206d05cb764ea0da278179",
     "migrations/env.py.jinja": "f156237b9754a48de1b289045f8f7daadfbf3bfe0d918d69e2786690d40957f3",
     "migrations/versions/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -132,6 +133,7 @@
     "deploy/values.yaml.jinja": "overlay",
     "docker/chart_release.py": "overlay",
     "docker/coverage_report.py": "parent",
+    "docker/python_release.py": "parent",
     "docker/quality-python.mk": "parent",
     "docker/quality.mk": "parent",
     "docker/release.py": "parent",
@@ -163,8 +165,8 @@
     "tests/foundation/test_settings.py.jinja": "overlay",
     "tests/test_http.py.jinja": "overlay"
   },
-  "parentContentSha256": "f684540180dce2d08def69579a6ba490f3973138e1dc8b5bbc22f5cd645a0c80",
+  "parentContentSha256": "4113ac317516a8231ed9c2f64b52751eff6d30c8124bddae278f35f45ff6d976",
   "schema": 1,
-  "sourceContentSha256": "91fa0b6a741ca0476d5bf4f9c1b3b63ea208448b2c2d99227f6fb32c5442039b",
+  "sourceContentSha256": "b730c55b5ff3ceb6b5b87ffba90d5970b688bd22ce9b04d3bce4039e95bd77e1",
   "templateVersion": "0.3.0.dev2"
 }
